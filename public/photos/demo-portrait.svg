@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e8e5db"/>
+  <path d="M0 670 290 560 580 620 860 480 1200 570V900H0Z" fill="#cbd3c7"/>
+  <circle cx="600" cy="352" r="133" fill="#667c76"/>
+  <path d="M330 796c0-230 98-301 270-301s270 71 270 301" fill="#667c76"/>
+  <rect x="40" y="40" width="220" height="56" rx="3" fill="#fffefa"/>
+  <text x="62" y="77" font-family="Arial,sans-serif" font-size="25" fill="#324744" letter-spacing="3">DEMO IMAGE</text>
+  <rect y="802" width="1200" height="98" fill="#fffefa"/>
+  <text x="40" y="865" font-family="Georgia,serif" font-size="36" fill="#243735">01 / Portrait</text>
+</svg>

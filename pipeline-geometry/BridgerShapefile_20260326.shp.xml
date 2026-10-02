@@ -1,0 +1,208 @@
+<metadata xml:lang="en">
+	<Esri>
+		<CreaDate>20251106</CreaDate>
+		<CreaTime>14353300</CreaTime>
+		<ArcGISFormat>1.0</ArcGISFormat>
+		<ArcGISProfile>FGDC</ArcGISProfile>
+		<DataProperties>
+			<itemProps>
+				<imsContentType Sync="TRUE">002</imsContentType>
+				<itemName Sync="TRUE">BridgerShapefile_20260326</itemName>
+				<itemSize Sync="TRUE">0.000</itemSize>
+				<itemLocation>
+					<linkage Sync="TRUE">file://\\DEQMET02587P\Users\cb0224\OneDrive - MT\Documents\ArcGIS\Projects\RecordsRequest\BPE_Shapefile\BridgerShapefile_20260326.shp</linkage>
+					<protocol Sync="TRUE">Local Area Network</protocol>
+				</itemLocation>
+			</itemProps>
+			<coordRef>
+				<type Sync="TRUE">Projected</type>
+				<geogcsn Sync="TRUE">GCS_North_American_1983</geogcsn>
+				<csUnits Sync="TRUE">Linear Unit: Foot_US (0.304801)</csUnits>
+				<projcsn Sync="TRUE">NAD_1983_BLM_Zone_13N</projcsn>
+				<peXml Sync="TRUE">&lt;ProjectedCoordinateSystem xsi:type='typens:ProjectedCoordinateSystem' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:typens='http://www.esri.com/schemas/ArcGIS/3.3.0'&gt;&lt;WKT&gt;PROJCS[&amp;quot;NAD_1983_BLM_Zone_13N&amp;quot;,GEOGCS[&amp;quot;GCS_North_American_1983&amp;quot;,DATUM[&amp;quot;D_North_American_1983&amp;quot;,SPHEROID[&amp;quot;GRS_1980&amp;quot;,6378137.0,298.257222101]],PRIMEM[&amp;quot;Greenwich&amp;quot;,0.0],UNIT[&amp;quot;Degree&amp;quot;,0.0174532925199433]],PROJECTION[&amp;quot;Transverse_Mercator&amp;quot;],PARAMETER[&amp;quot;False_Easting&amp;quot;,1640416.666666667],PARAMETER[&amp;quot;False_Northing&amp;quot;,0.0],PARAMETER[&amp;quot;Central_Meridian&amp;quot;,-105.0],PARAMETER[&amp;quot;Scale_Factor&amp;quot;,0.9996],PARAMETER[&amp;quot;Latitude_Of_Origin&amp;quot;,0.0],UNIT[&amp;quot;Foot_US&amp;quot;,0.3048006096012192],AUTHORITY[&amp;quot;EPSG&amp;quot;,4433]]&lt;/WKT&gt;&lt;XOrigin&gt;-16800800&lt;/XOrigin&gt;&lt;YOrigin&gt;-32802000&lt;/YOrigin&gt;&lt;XYScale&gt;137296494.95062786&lt;/XYScale&gt;&lt;ZOrigin&gt;-100000&lt;/ZOrigin&gt;&lt;ZScale&gt;10000&lt;/ZScale&gt;&lt;MOrigin&gt;-100000&lt;/MOrigin&gt;&lt;MScale&gt;10000&lt;/MScale&gt;&lt;XYTolerance&gt;0.0032808333333333331&lt;/XYTolerance&gt;&lt;ZTolerance&gt;0.001&lt;/ZTolerance&gt;&lt;MTolerance&gt;0.001&lt;/MTolerance&gt;&lt;HighPrecision&gt;true&lt;/HighPrecision&gt;&lt;WKID&gt;4433&lt;/WKID&gt;&lt;LatestWKID&gt;4433&lt;/LatestWKID&gt;&lt;/ProjectedCoordinateSystem&gt;</peXml>
+			</coordRef>
+			<lineage>
+				<Process ToolSource="c:\program files\arcgis\pro\Resources\ArcToolbox\toolboxes\Conversion Tools.tbx\ExportFeatures" Date="20260218" Time="123325">ExportFeatures BLM_Submitted_POD_Route \\uei.com\Storage\GISDatabases\2025\25.02548_Bridger\Correspondence\Outgoing\20260218_BLM_InfraFiles\Bridger_ProjectData_20260218.gdb\ProjectCenterline # NOT_USE_ALIAS "Updated "Updated" true true false 254 Text 0 0,First,#,BLM_Submitted_POD_Route,Updated,0,253" #</Process>
+				<Process Name="Clip" ToolSource="c:\program files\arcgis\pro\Resources\ArcToolbox\toolboxes\Analysis Tools.tbx\Clip" Date="20260227" Time="090032">Clip ProjectCenterline "Montana State Boundary" C:\Users\andrew.baum\AppData\Local\Temp\ArcGISProTemp15188\Untitled\Default.gdb\Clip_OutFeatureClass_ProjectCenterline #</Process>
+				<Process ToolSource="c:\program files\arcgis\pro\Resources\ArcToolbox\toolboxes\Data Management Tools.tbx\CopyFeatures" Date="20260227" Time="090222">CopyFeatures FeatureClass_ProjectCenterline "\\uei.com\Storage\GISDatabases\2025\25.02548_Bridger\Figures\MFSA Figures\Second Round\MFSA Shapefiles GDB 20260226\Bridger_MFSA_Shapefiles_20260226.gdb\FeatureClass_ProjectCenterline" # # # #</Process>
+				<Process ToolSource="c:\program files\arcgis\pro\Resources\ArcToolbox\Toolboxes\Data Management Tools.tbx\Rename" Date="20260227" Time="133712">Rename \\uei.com\Storage\GISDatabases\2025\25.02548_Bridger\Correspondence\Outgoing\20260227_BridgerMFSAShapefile\Bridger_MFSA_Shapefiles_20260226.gdb\FeatureClass_ProjectCenterline \\uei.com\Storage\GISDatabases\2025\25.02548_Bridger\Correspondence\Outgoing\20260227_BridgerMFSAShapefile\Bridger_MFSA_Shapefiles_20260226.gdb\ProjectCenterline FeatureClass</Process>
+				<Process ToolSource="c:\program files\arcgis\pro\Resources\ArcToolbox\toolboxes\Conversion Tools.tbx\ExportFeatures" Date="20260504" Time="144523">ExportFeatures L:\AEM\HRM\Data\MFSA\BridgerPipe\Bridger_MFSA_Data_20260325.gdb\ProjectCenterline "C:\Users\cb0224\OneDrive - MT\Documents\ArcGIS\Projects\RecordsRequest\BPE_Shapefile\BridgerShapefile_20260326.shp" # NOT_USE_ALIAS "Updated "Updated" true true false 254 Text 0 0,First,#,L:\AEM\HRM\Data\MFSA\BridgerPipe\Bridger_MFSA_Data_20260325.gdb\ProjectCenterline,Updated,0,253;Shape_Length "Shape_Length" false true true 8 Double 0 0,First,#,L:\AEM\HRM\Data\MFSA\BridgerPipe\Bridger_MFSA_Data_20260325.gdb\ProjectCenterline,Shape_Length,-1,-1" #</Process></lineage>
+		</DataProperties>
+		<ModDate>20260504</ModDate>
+		<ModTime>14452300</ModTime>
+		<SyncOnce>FALSE</SyncOnce>
+		<SyncDate>20260504</SyncDate>
+		<SyncTime>14452300</SyncTime>
+	</Esri>
+	<dataIdInfo>
+		<idAbs>&lt;p&gt;The Bridger Pipeline Expansion centerline to be used for agency review. Route identified through desktop reviews, aerial imagery, and landowner agreements.&lt;/p&gt;</idAbs>
+		<idCitation>
+			<resTitle Sync="FALSE">Project Centerline</resTitle>
+			<date>
+				<pubDate>2026-02-18T12:00:00</pubDate>
+			</date>
+			<presForm>
+				<PresFormCd value="005" Sync="TRUE">
+				</PresFormCd>
+			</presForm>
+			<citRespParty>
+				<role>
+					<RoleCd value="003">
+					</RoleCd>
+				</role>
+				<rpCntInfo>
+					<cntAddress addressType="postal">
+						<eMailAdd>Sara.Bohl@Truecos.com</eMailAdd>
+						<delPoint>PO Drawer 2360</delPoint>
+						<city>Casper</city>
+						<adminArea>WY</adminArea>
+						<postCode>82602</postCode>
+					</cntAddress>
+				</rpCntInfo>
+				<rpIndName>Sara Bohl</rpIndName>
+				<rpOrgName>Bridger Pipeline Expansion</rpOrgName>
+				<rpPosName>Project Manager</rpPosName>
+			</citRespParty>
+		</idCitation>
+		<dataExt>
+			<exDesc>Eastern Montana and Wyoming</exDesc>
+			<geoEle>
+				<GeoBndBox>
+					<westBL Sync="FALSE">-108.435059</westBL>
+					<eastBL Sync="FALSE">-103.820801</eastBL>
+					<northBL Sync="FALSE">49.181703</northBL>
+					<southBL Sync="FALSE">41.672912</southBL>
+				</GeoBndBox>
+			</geoEle>
+		</dataExt>
+		<searchKeys>
+			<keyword>bridger</keyword>
+			<keyword>pipeline</keyword>
+		</searchKeys>
+		<themeKeys>
+			<keyword>centerline</keyword>
+			<keyword>bridger</keyword>
+			<keyword>pipeline</keyword>
+		</themeKeys>
+		<idPurp>The Bridger Pipeline Expansion centerline to be used for agency review.</idPurp>
+		<idCredit>Route identified by Bridger staff.</idCredit>
+		<resConst>
+			<Consts>
+				<useLimit>&lt;p style="font-family:Calibri;font-size:11.0pt;margin:0in;"&gt;Preliminary information, not for construction. Data is for internal agency use only.&lt;/p&gt;</useLimit>
+			</Consts>
+		</resConst>
+		<dataLang>
+			<languageCode value="eng" Sync="TRUE">
+			</languageCode>
+			<countryCode value="US" Sync="FALSE">
+			</countryCode>
+		</dataLang>
+		<dataChar>
+			<CharSetCd value="004" Sync="FALSE">
+			</CharSetCd>
+		</dataChar>
+		<spatRpType>
+			<SpatRepTypCd value="001" Sync="TRUE">
+			</SpatRepTypCd>
+		</spatRpType>
+		<envirDesc Sync="FALSE">Esri ArcGIS 13.5.3.57366</envirDesc>
+		<resMaint>
+			<maintFreq>
+				<MaintFreqCd value="009">
+				</MaintFreqCd>
+			</maintFreq>
+		</resMaint>
+		<tpCat>
+			<TopicCatCd value="019">
+			</TopicCatCd>
+		</tpCat>
+	</dataIdInfo>
+	<mdLang>
+		<languageCode value="eng" Sync="TRUE">
+		</languageCode>
+		<countryCode value="USA" Sync="TRUE">
+		</countryCode>
+	</mdLang>
+	<mdHrLv>
+		<ScopeCd value="005" Sync="TRUE">
+		</ScopeCd>
+	</mdHrLv>
+	<mdHrLvName Sync="TRUE">dataset</mdHrLvName>
+	<mdChar>
+		<CharSetCd value="004" Sync="TRUE">
+		</CharSetCd>
+	</mdChar>
+	<mdDateSt Sync="TRUE">20260504</mdDateSt>
+	<mdContact>
+		<rpCntInfo>
+			<cntAddress addressType="postal">
+				<eMailAdd>grady.wolf@ulteig.com</eMailAdd>
+				<delPoint>419 Riverwood Drive, Suite 201</delPoint>
+				<city>Bismarck</city>
+				<adminArea>ND</adminArea>
+				<postCode>58504</postCode>
+			</cntAddress>
+		</rpCntInfo>
+		<role>
+			<RoleCd value="006">
+			</RoleCd>
+		</role>
+		<rpOrgName>Ulteig Engineers</rpOrgName>
+		<rpIndName>Grady Wolf</rpIndName>
+		<rpPosName>Project Manager</rpPosName>
+	</mdContact>
+	<distInfo>
+		<distTranOps>
+			<transSize Sync="TRUE">0.000</transSize>
+		</distTranOps>
+		<distFormat>
+			<formatName Sync="TRUE">Shapefile</formatName>
+			<formatVer>01/30/26</formatVer>
+		</distFormat>
+	</distInfo>
+	<refSysInfo>
+		<RefSystem>
+			<refSysID>
+				<identCode code="4433" Sync="TRUE">
+				</identCode>
+				<idCodeSpace>EPSG</idCodeSpace>
+				<idVersion>7.4.5(10.1.0)</idVersion>
+			</refSysID>
+		</RefSystem>
+	</refSysInfo>
+	<eainfo>
+		<detailed Name="BridgerShapefile_20260326">
+			<enttyp>
+				<enttypl Sync="TRUE">BridgerShapefile_20260326</enttypl>
+				<enttypt Sync="TRUE">Feature Class</enttypt>
+				<enttypc Sync="FALSE">1</enttypc>
+			</enttyp>
+			<attr><attrlabl Sync="TRUE">FID</attrlabl><attalias Sync="TRUE">FID</attalias><attrtype Sync="TRUE">OID</attrtype><attwidth Sync="TRUE">4</attwidth><atprecis Sync="TRUE">0</atprecis><attscale Sync="TRUE">0</attscale><attrdef Sync="TRUE">Internal feature number.</attrdef><attrdefs Sync="TRUE">Esri</attrdefs><attrdomv><udom Sync="TRUE">Sequential unique whole numbers that are automatically generated.</udom></attrdomv></attr><attr>
+				<attrlabl Sync="TRUE">Shape</attrlabl>
+				<attalias Sync="TRUE">Shape</attalias>
+				<attrtype Sync="TRUE">Geometry</attrtype>
+				<attwidth Sync="TRUE">0</attwidth>
+				<atprecis Sync="TRUE">0</atprecis>
+				<attscale Sync="TRUE">0</attscale>
+				<attrdef Sync="TRUE">Feature geometry.</attrdef>
+				<attrdefs Sync="TRUE">Esri</attrdefs>
+				<attrdomv>
+					<udom Sync="TRUE">Coordinates defining the features.</udom>
+				</attrdomv>
+			</attr>
+			<attr>
+				<attrlabl Sync="TRUE">Updated</attrlabl>
+				<attalias Sync="TRUE">Updated</attalias>
+				<attrtype Sync="TRUE">String</attrtype>
+				<attwidth Sync="TRUE">254</attwidth>
+				<atprecis Sync="TRUE">0</atprecis>
+				<attscale Sync="TRUE">0</attscale>
+				<attrdef Sync="FALSE">Last date the route was changed. Updated manually by GIS when updating route.</attrdef>
+			</attr>
+			<attr><attrlabl Sync="TRUE">Shape_Leng</attrlabl><attalias Sync="TRUE">Shape_Leng</attalias><attrtype Sync="TRUE">Double</attrtype><attwidth Sync="TRUE">19</attwidth><atprecis Sync="TRUE">0</atprecis><attscale Sync="TRUE">0</attscale></attr></detailed>
+	</eainfo>
+	<spatRepInfo>
+		<VectSpatRep><geometObjs Name="BridgerShapefile_20260326"><geoObjTyp><GeoObjTypCd value="002" Sync="TRUE"></GeoObjTypCd></geoObjTyp><geoObjCnt Sync="TRUE">0</geoObjCnt></geometObjs><topLvl><TopoLevCd value="001" Sync="TRUE"></TopoLevCd></topLvl></VectSpatRep></spatRepInfo>
+	<spdoinfo>
+		<ptvctinf><esriterm Name="BridgerShapefile_20260326"><efeatyp Sync="TRUE">Simple</efeatyp><efeageom code="3" Sync="TRUE"></efeageom><esritopo Sync="TRUE">FALSE</esritopo><efeacnt Sync="TRUE">0</efeacnt><spindex Sync="TRUE">FALSE</spindex><linrefer Sync="TRUE">FALSE</linrefer></esriterm></ptvctinf></spdoinfo>
+</metadata>

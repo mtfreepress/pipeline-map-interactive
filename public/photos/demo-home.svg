@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e8e5db"/>
+  <path d="M0 566 350 444 780 510 1200 402V900H0Z" fill="#b5c3b4"/>
+  <path d="M0 677 460 592 1200 670V900H0Z" fill="#92a490"/>
+  <rect x="377" y="432" width="434" height="243" fill="#f7f1df"/>
+  <path d="m335 437 258-178 264 178Z" fill="#776d61"/>
+  <rect x="568" y="538" width="71" height="137" fill="#647a75"/>
+  <path d="M421 503h89v88h-89zm270 0h75v88h-75z" fill="#a7bab9"/>
+  <path d="M596 677 494 802H727L622 677" fill="#d3cfb6"/>
+  <rect x="40" y="40" width="220" height="56" rx="3" fill="#fffefa"/>
+  <text x="62" y="77" font-family="Arial,sans-serif" font-size="25" fill="#324744" letter-spacing="3">DEMO IMAGE</text>
+  <rect y="802" width="1200" height="98" fill="#fffefa"/>
+  <text x="40" y="865" font-family="Georgia,serif" font-size="36" fill="#243735">03 / A sense of home</text>
+</svg>

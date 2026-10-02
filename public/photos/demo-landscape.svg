@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e2e8e5"/>
+  <circle cx="936" cy="250" r="71" fill="#f9f3df"/>
+  <path d="M0 520 230 340 500 475 810 330 1200 510V900H0Z" fill="#a8b8af"/>
+  <path d="M0 608 220 540 470 610 800 490 1200 620V900H0Z" fill="#738c7e"/>
+  <path d="M0 710 390 600 830 680 1200 590V900H0Z" fill="#c4c3a1"/>
+  <path d="M0 769 1200 670M0 800 1200 710" stroke="#e8e1bf" stroke-width="10"/>
+  <rect x="40" y="40" width="220" height="56" rx="3" fill="#fffefa"/>
+  <text x="62" y="77" font-family="Arial,sans-serif" font-size="25" fill="#324744" letter-spacing="3">DEMO IMAGE</text>
+  <rect y="802" width="1200" height="98" fill="#fffefa"/>
+  <text x="40" y="865" font-family="Georgia,serif" font-size="36" fill="#243735">02 / The surrounding place</text>
+</svg>
