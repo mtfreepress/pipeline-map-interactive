@@ -2,7 +2,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import './style.css';
 import { people, story } from './people.js';
 import { createGallery } from './gallery.js';
-import { fetchGeoJSON, validateLocations, validatePipeline, validateReservation } from './data.js';
+import { fetchGeoJSON, validateLocations, validatePipeline, validateReservation, validateCounties } from './data.js';
 
 const picker = document.querySelector('#person-picker');
 const viewer = document.querySelector('#viewer');
@@ -16,11 +16,7 @@ let routeMap;
 let selectedId = null;
 let returnFocus = picker;
 
-document.querySelector('#story-title').textContent = story.title;
 document.title = `${story.title} · Pipeline interactive`;
-document.querySelector('.standfirst').textContent = story.subtitle;
-document.querySelector('#demo-badge').hidden = !story.demo;
-document.querySelector('#data-note').textContent = story.dataNote;
 
 function notice(key, text) {
   if (text) notices.set(key, text);
@@ -59,6 +55,9 @@ function selectPerson(id, origin = picker) {
   viewer.querySelector('.viewer-content').scrollTop = 0;
   routeMap?.select(id);
   viewer.focus({ preventScroll: true });
+  if (matchMedia('(max-width: 699px)').matches) {
+    viewer.querySelector('.viewer-header').scrollIntoView({ block: 'nearest' });
+  }
   announcement.textContent = `${person.name || 'Profile'} selected. Details are open.`;
 }
 
@@ -89,14 +88,20 @@ async function start() {
     }
     metadata.set(person.id, person);
   }
-  const [routeResult, peopleResult, reservationResult] = await Promise.allSettled([
+  const [routeResult, peopleResult, reservationResult, countiesResult] = await Promise.allSettled([
     fetchGeoJSON('./data/pipeline.geojson', validatePipeline),
     fetchGeoJSON('./data/people.geojson', validateLocations),
     fetchGeoJSON('./data/fort-peck-reservation.geojson', validateReservation),
+    fetchGeoJSON('./data/counties.geojson', validateCounties),
   ]);
   notice('loading', '');
   const locations = peopleResult.status === 'fulfilled' ? peopleResult.value : { type: 'FeatureCollection', features: [] };
   const reservation = reservationResult.status === 'fulfilled' ? reservationResult.value : { type: 'FeatureCollection', features: [] };
+  const counties = countiesResult.status === 'fulfilled' ? countiesResult.value : { type: 'FeatureCollection', features: [] };
+  if (countiesResult.status === 'rejected') {
+    console.error('County boundaries could not load:', countiesResult.reason);
+    notice('counties', 'County boundaries could not be loaded. Commission profiles can still be opened from the menu.');
+  }
   if (reservationResult.status === 'rejected') {
     console.error('Reservation boundary could not load:', reservationResult.reason);
     notice('reservation', 'The Fort Peck reservation boundary could not be loaded. Available profiles can still be opened from the menu.');
@@ -105,7 +110,7 @@ async function start() {
     console.error('Person locations could not load:', peopleResult.reason);
     notice('locations', 'Person locations could not load. Available profiles can still be opened from the menu.');
   }
-  const ids = new Set([...metadata.keys(), ...[...locations.features, ...reservation.features].map((feature) => feature.properties.id)]);
+  const ids = new Set([...metadata.keys(), ...[...locations.features, ...reservation.features, ...counties.features].map((feature) => feature.properties.id).filter(Boolean)]);
   for (const id of ids) {
     const option = document.createElement('option');
     option.value = id;
@@ -117,18 +122,18 @@ async function start() {
     notice('empty', 'No person profiles are available yet. You can still explore the route.');
     intro.querySelector('h2').textContent = 'Follow the route.';
     intro.querySelector('p').textContent = 'Person profiles will appear here when they are available.';
-  } else if (!locations.features.length && !reservation.features.length) {
+  } else if (!locations.features.length && !reservation.features.length && !counties.features.some((feature) => feature.properties.id)) {
     notice('locations', 'No person locations are available on the map yet. Explore available profiles using the menu.');
   } else if (!metadata.size) {
     notice('empty', 'Person details are not available yet. The route and location points remain available.');
   }
   if (routeResult.status === 'rejected') {
     console.error('Pipeline data could not load:', routeResult.reason);
-    notice('route', 'The pipeline route could not be loaded. Please try reloading. Available profiles can still be opened above.');
+    notice('route', 'The pipeline route could not be loaded. Please try reloading. Available profiles can still be opened using the menu.');
   }
   const token = import.meta.env.VITE_MAPBOX_TOKEN?.trim();
   if (!token) {
-    notice('map', 'Map unavailable: no Mapbox token is configured. Set VITE_MAPBOX_TOKEN in .env.local, then restart the development server or rebuild. You can still explore available profiles above.');
+    notice('map', 'Map unavailable: no Mapbox token is configured. Set VITE_MAPBOX_TOKEN in .env.local, then restart the development server or rebuild. You can still explore available profiles using the menu.');
     return;
   }
   if (routeResult.status === 'rejected') return;
@@ -136,7 +141,7 @@ async function start() {
   try {
     const { createRouteMap } = await import('./map.js');
     routeMap = createRouteMap({
-      token, pipeline: routeResult.value, locations, reservation, profiles: people,
+      token, pipeline: routeResult.value, locations, reservation, counties, profiles: people,
       onSelect: selectPerson,
       onStatus: (text) => notice('map', text),
       onReady: () => { reset.disabled = false; },

@@ -1,7 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 
 // Opening/reset view: [[west, south], [east, north]], in longitude/latitude.
-// null fits the pipeline instead. Right padding reserves space for an open profile.
+// null fits the pipeline instead. Selection padding clears the southwest profile panel.
 export const MAP_VIEW = {
   desktopBounds: [[-116.1, 44.3], [-103.95, 49.1]],
   mobileBounds: null,
@@ -24,6 +24,8 @@ export const MAP_STYLE = {
   pointRadius: 8,
   selectedRadius: 10,
   hitRadius: 22,
+  countyColor: '#7d8984',
+  countyWidth: 1.5,
   reservationColor: '#e6ab02',
   reservationWidth: 1.5,
   reservationGap: 0,
@@ -49,10 +51,9 @@ function styleWater(map) {
   }
 }
 
-export function createRouteMap({ token, pipeline, locations, reservation, profiles, onSelect, onStatus, onReady }) {
-  const stage = document.querySelector('.map-stage');
-  const viewer = document.querySelector('#viewer');
-  const intro = document.querySelector('#intro-panel');
+export function createRouteMap({ token, pipeline, locations, reservation, counties, profiles, onSelect, onStatus, onReady }) {
+  const stage = document.querySelector('.map-viewport');
+  const panel = document.querySelector('.profile-panel');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const narrow = matchMedia('(max-width: 699px)');
   const colors = getComputedStyle(document.documentElement);
@@ -61,10 +62,14 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
     const lines = feature.geometry.type === 'LineString' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
     lines.forEach((line) => line.forEach((coordinate) => bounds.extend(coordinate)));
   }
-  const reservationBounds = new mapboxgl.LngLatBounds();
-  for (const feature of reservation.features) {
+  const areaBounds = new Map();
+  for (const feature of [...reservation.features, ...counties.features]) {
+    const id = feature.properties.id;
+    if (!id) continue;
+    const boundary = areaBounds.get(id) || new mapboxgl.LngLatBounds();
     const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
-    polygons.forEach((polygon) => polygon.forEach((ring) => ring.forEach((coordinate) => reservationBounds.extend(coordinate))));
+    polygons.forEach((polygon) => polygon.forEach((ring) => ring.forEach((coordinate) => boundary.extend(coordinate))));
+    areaBounds.set(id, boundary);
   }
   let selectedId = null;
   let ready = false;
@@ -85,16 +90,13 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
     return (narrow.matches ? MAP_VIEW.mobileBounds : MAP_VIEW.desktopBounds) ?? bounds;
   }
 
-  function padding() {
-    const panel = viewer.hidden ? intro : viewer;
-    const rect = stage.getBoundingClientRect();
-    const panelRect = panel.getBoundingClientRect();
-    if (narrow.matches) {
-      const top = Math.min(110, rect.height * 0.2);
-      return { top, left: 24, right: 24, bottom: Math.min(Math.max(0, rect.height - top - 40), panelRect.height + 50) };
-    }
+  function padding(forSelection = false) {
+    if (narrow.matches) return { top: 110, left: 24, right: 24, bottom: 36 };
     const { top, left, bottom, panelGap } = MAP_VIEW.desktopPadding;
-    return { top, left, bottom, right: viewer.hidden ? left : Math.min(rect.width * 0.55, panelRect.width + panelGap) };
+    return {
+      top, bottom, right: left,
+      left: forSelection ? panel.getBoundingClientRect().width + panelGap : left,
+    };
   }
 
   const map = new mapboxgl.Map({
@@ -117,11 +119,11 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
   });
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
-  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
-  map.getCanvas().setAttribute('aria-label', 'Pipeline map. Use arrow keys to pan and plus or minus to zoom. Select profiles using the Explore a person menu above.');
+  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+  map.getCanvas().setAttribute('aria-label', 'Pipeline map. Use arrow keys to pan and plus or minus to zoom. Select profiles using the Explore a profile menu.');
 
   const loadTimeout = window.setTimeout(() => {
-    if (!ready) onStatus('The map is taking longer than expected. Check your connection or try reloading. Profiles are still available above.');
+    if (!ready) onStatus('The map is taking longer than expected. Check your connection or try reloading. Profiles are still available using the menu.');
   }, 15000);
   map.on('error', () => {
     // Avoid logging request URLs containing the public token.
@@ -136,9 +138,28 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
     const selectedColor = colors.getPropertyValue('--selected').trim();
     map.addSource('pipeline', { type: 'geojson', data: pipeline });
     map.addSource('people', { type: 'geojson', data: locations, promoteId: 'id' });
+    map.addSource('counties', { type: 'geojson', data: counties });
     map.addSource('reservation', { type: 'geojson', data: reservation });
     // Keep basemap text above the route for geographic context.
     const firstLabel = map.getStyle().layers.find((layer) => layer.type === 'symbol')?.id;
+    map.addLayer({
+      id: 'county-hit-area', type: 'fill', source: 'counties', filter: ['has', 'id'],
+      paint: { 'fill-opacity': 0 },
+    }, firstLabel);
+    map.addLayer({
+      id: 'county-outline', type: 'line', source: 'counties',
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': MAP_STYLE.countyColor, 'line-width': MAP_STYLE.countyWidth, 'line-opacity': 0.7 },
+    }, firstLabel);
+    map.addLayer({
+      id: 'county-hover', type: 'fill', source: 'counties', filter: ['==', ['get', 'id'], ''],
+      paint: { 'fill-color': MAP_STYLE.countyColor, 'fill-opacity': 0.15 },
+    }, firstLabel);
+    map.addLayer({
+      id: 'county-selected', type: 'line', source: 'counties', filter: ['==', ['get', 'id'], ''],
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': pointColor, 'line-width': 3 },
+    }, firstLabel);
     map.addLayer({
       id: 'reservation-hit-area', type: 'fill', source: 'reservation',
       paint: { 'fill-opacity': 0 },
@@ -195,7 +216,8 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
         const screen = map.project(feature.geometry.coordinates);
         return { feature, distance: Math.hypot(screen.x - point.x, screen.y - point.y) };
       }).sort((a, b) => a.distance - b.distance)[0]?.feature;
-      return nearest ?? map.queryRenderedFeatures(point, { layers: ['reservation-hit-area', 'reservation-outline'] })[0];
+      return nearest ?? map.queryRenderedFeatures(point, { layers: ['reservation-hit-area', 'reservation-outline'] })[0]
+        ?? map.queryRenderedFeatures(point, { layers: ['county-hit-area'] })[0];
     }
     map.on('click', (event) => {
       const feature = featureAt(event.point);
@@ -212,6 +234,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
         const filter = ['==', ['get', 'id'], id];
         map.setFilter('people-hover', filter);
         map.setFilter('reservation-hover', filter);
+        map.setFilter('county-hover', filter);
         tooltipName.textContent = profileNames.get(id) || 'Explore this location';
       }
       map.getCanvas().style.cursor = 'pointer';
@@ -236,6 +259,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
     hoveredId = null;
     map.setFilter('people-hover', ['==', ['get', 'id'], '']);
     map.setFilter('reservation-hover', ['==', ['get', 'id'], '']);
+    map.setFilter('county-hover', ['==', ['get', 'id'], '']);
   }
 
   function resetView(animate = true) {
@@ -248,12 +272,13 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
   }
 
   function keepSelectedVisible(animate = true) {
-    if (selectedId === 'fort-peck-tribes' && !reservationBounds.isEmpty()) {
-      const safe = padding();
-      const corners = [reservationBounds.getNorthWest(), reservationBounds.getSouthEast()].map((corner) => map.project(corner));
+    const boundary = areaBounds.get(selectedId);
+    if (boundary && !boundary.isEmpty()) {
+      const safe = padding(true);
+      const corners = [boundary.getNorthWest(), boundary.getSouthEast()].map((corner) => map.project(corner));
       if (corners.some((point) => point.x < safe.left || point.x > stage.clientWidth - safe.right ||
         point.y < safe.top || point.y > stage.clientHeight - safe.bottom)) {
-        map.fitBounds(reservationBounds, {
+        map.fitBounds(boundary, {
           padding: safe, retainPadding: false, maxZoom: 12,
           duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
         });
@@ -263,7 +288,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
     const feature = locations.features.find((item) => item.properties.id === selectedId);
     if (!feature) return;
     const point = map.project(feature.geometry.coordinates);
-    const safe = padding();
+    const safe = padding(true);
     const width = stage.clientWidth;
     const height = stage.clientHeight;
     const targetX = Math.max(safe.left, Math.min(width - safe.right, point.x));
@@ -283,36 +308,34 @@ export function createRouteMap({ token, pipeline, locations, reservation, profil
     map.setFilter('people-selected-ring', filter);
     map.setFilter('people-selected', filter);
     map.setFilter('reservation-selected', filter);
+    map.setFilter('county-selected', filter);
     if (id) {
-      // Opening the mobile card from the overview should not cover the lower route.
-      // Once the reader has moved the map, preserve their chosen zoom instead.
-      const fromOverview = overview;
       overview = false;
-      if (fromOverview && narrow.matches && id !== 'fort-peck-tribes') {
-        map.fitBounds(overviewBounds(), {
-          padding: padding(), retainPadding: false,
-          duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
-          maxZoom: 12,
-        });
-      } else keepSelectedVisible(animate);
+      keepSelectedVisible(animate);
     }
   }
 
   map.on('movestart', (event) => { clearHover(); if (event.originalEvent) overview = false; });
   // Handles iframe resizing and a panel changing size after image/text updates.
   let resizeFrame;
+  let wasNarrow = narrow.matches;
   const observer = new ResizeObserver(() => {
     cancelAnimationFrame(resizeFrame);
     resizeFrame = requestAnimationFrame(() => {
       map.resize();
       if (!ready) return;
+      // Refit when switching layouts so the desktop extent does not crop the
+      // route on a phone. Resizing within a layout preserves the reader's zoom.
+      if (wasNarrow !== narrow.matches) {
+        wasNarrow = narrow.matches;
+        resetView(false);
+      }
       if (selectedId) keepSelectedVisible(false);
       else if (overview) resetView(false);
     });
   });
   observer.observe(stage);
-  observer.observe(viewer);
-  observer.observe(intro);
+  observer.observe(panel);
 
   return { select, resetView };
 }

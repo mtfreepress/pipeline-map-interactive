@@ -41,9 +41,9 @@ export function validateLocations(data) {
   return { ...collection, features };
 }
 
-export function validateReservation(data) {
+function validateBoundaries(data) {
   const collection = featureCollection(data);
-  if (!collection.features.length) throw new Error('The reservation has no features.');
+  if (!collection.features.length) throw new Error('The boundary collection has no features.');
   const features = collection.features.map((feature) => {
     const geometry = feature?.geometry;
     const polygons = geometry?.type === 'Polygon' ? [geometry.coordinates] :
@@ -52,11 +52,33 @@ export function validateReservation(data) {
       !Array.isArray(polygon) || !polygon.length || polygon.some((ring) =>
         !Array.isArray(ring) || ring.length < 4 || !ring.every(validCoordinate) ||
         ring[0][0] !== ring.at(-1)[0] || ring[0][1] !== ring.at(-1)[1]))) {
-      throw new Error('Reservation geometry must contain valid closed Polygon or MultiPolygon rings.');
+      throw new Error('Boundary geometry must contain valid closed Polygon or MultiPolygon rings.');
     }
-    return { ...feature, properties: { ...feature.properties, id: 'fort-peck-tribes' } };
+    return feature;
   });
   return { ...collection, features };
+}
+
+export function validateReservation(data) {
+  const collection = validateBoundaries(data);
+  return { ...collection, features: collection.features.map((feature) => ({
+    ...feature, properties: { ...feature.properties, id: 'fort-peck-tribes' },
+  })) };
+}
+
+export function validateCounties(data) {
+  const collection = validateBoundaries(data);
+  const ids = new Set();
+  for (const feature of collection.features) {
+    const id = feature.properties?.id;
+    if (id != null) {
+      if (typeof id !== 'string' || !id.trim() || ids.has(id)) {
+        throw new Error('Interactive counties need unique string profile IDs.');
+      }
+      ids.add(id);
+    }
+  }
+  return collection;
 }
 
 export async function fetchGeoJSON(path, validate) {

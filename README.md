@@ -32,8 +32,9 @@ Vite embeds `import.meta.env.VITE_MAPBOX_TOKEN` at **build time**. Restart the d
 | File | Purpose |
 | --- | --- |
 | `public/data/pipeline.geojson` | Bridger centerline converted from the supplied shapefile to WGS84 GeoJSON. |
-| `public/data/people.geojson` | Seven point locations and their source/match metadata. |
+| `public/data/people.geojson` | Five point locations and their source/match metadata. |
 | `public/data/fort-peck-reservation.geojson` | Selectable Fort Peck reservation boundary, replacing the tribe’s point marker. |
+| `public/data/counties.geojson` | Daniels, Valley and Carter boundaries extracted from `raw-input-atlas-data/mt-counties-100m.geojson`; Valley and Carter open commission profiles. |
 | `src/people.js` | Names, location labels, photographs, captions and story metadata. |
 | `public/photos/` | Add profile photographs here. The four demo illustrations are retained for gallery tests. |
 | `index.html` | Update the page description and any fixed introductory/branding copy. |
@@ -54,7 +55,7 @@ mobileBounds: null,
 desktopPadding: { top: 66, left: 48, bottom: 60, panelGap: 48 },
 ```
 
-The desktop overview loosely encloses Montana across the full map, with a compact intro card at the lower left. When a profile opens on the right, camera padding reserves space for that panel. The panel width is measured automatically. `panelGap` adds breathing room between the fitted area and the panel; you do not need to add North Dakota to the bounds yourself. Aspect ratio determines how much neighboring geography is visible. These are camera bounds, not a boundary outline or a limit on panning. `null` fits the route instead, which remains the default on mobile. **Reset view** restores the configured overview.
+The desktop overview loosely encloses Montana across the full map, with a compact intro card at the lower left. Profiles open in the same lower-left panel; selection padding keeps their point or full boundary clear of the panel. The panel width is measured automatically. `panelGap` adds breathing room between the fitted area and the panel; you do not need to add North Dakota to the bounds yourself. Aspect ratio determines how much neighboring geography is visible. These are camera bounds, not a boundary outline or a limit on panning. `null` fits the route instead, which remains the default on mobile. **Reset view** restores the configured overview.
 
 **Water colors and detail.** The current Light basemap stays in place, with local paint overrides:
 
@@ -153,14 +154,14 @@ Photograph URLs resolve relative to the document, so `./photos/...` works from `
 
 Optional descriptions, locations, captions and credits are omitted when absent. One photograph hides the carousel controls/count. Zero photographs displays a text fallback. Unknown person ids display an unavailable-profile message and preserve the selected location. Malformed/failed location data leaves available editorial profiles accessible in the menu. Failed route data produces a clear message; the app does not pretend to show a valid route.
 
-`story.demo` is `false` for the supplied profiles. Update `story.dataNote` and the HTML meta description when the source or scope changes. Retain the `story` export alongside `people`. The route already uses the supplied Bridger geometry.
+The visible story header/footer have been removed; `story.title` still supplies the browser title. Update the HTML meta description when the scope changes. Retain the `story` export alongside `people`. The route already uses the supplied Bridger geometry.
 
 ## Reader experience and accessibility
 
-- Montana is fitted on desktop with the intro card at the lower left; open profiles use the right side. Mobile fits the full route. No person is selected initially.
+- Montana is fitted on desktop with the intro card at the lower left; open profiles reuse the same lower-left panel. Mobile fits the full route. No person is selected initially.
 - Circle layers represent people; a larger selected point and an outlined ring provide a persistent selection that does not depend only on color. Invisible 44-pixel-diameter hit areas make tapping easier.
-- Hover over a point to enlarge it and see its name with a “Click to explore” prompt. Hovering over Fort Peck shades the reservation and shows its name. Tooltips clear when the pointer leaves, the map moves, or a profile is selected.
-- Select a map point or use the native **Explore a person** menu. The menu gives keyboard and screen-reader users access to the same profiles without navigating a map canvas.
+- Hover over a point to enlarge it and see its name with a “Click to explore” prompt. Hovering over Fort Peck or the Valley/Carter commission areas shades the boundary and shows the profile name. Points take priority over boundaries, and Fort Peck takes priority where it overlaps Valley County. Daniels County is an outline only. Tooltips clear when the pointer leaves, the map moves, or a profile is selected.
+- Select a map point or use the native **Explore a profile** menu. The menu gives keyboard and screen-reader users access to the same profiles without navigating a map canvas.
 - Selection opens the HTML viewer, resets the gallery to its first photograph, and moves focus to the labeled viewer. Closing or pressing Escape within the viewer returns focus to the initiating menu or map canvas.
 - Previous/next buttons and left/right keys **inside the viewer** wrap at both ends. There are no global arrow-key handlers or required swipe gestures.
 - **Reset view** closes the panel and restores the configured overview. Selecting someone else reuses the same viewer and map. Empty-map clicks leave the profile open.
@@ -168,9 +169,11 @@ Optional descriptions, locations, captions and credits are omitted when absent. 
 
 ### Responsive panels and iframe sizing
 
-At 700px and wider, a compact intro card sits at the lower left and selected profiles open in a 340–420px panel on the right. Interface text uses 16–22px for most controls and body copy, with larger headings. Below 700px, it becomes a stable bottom card capped at 56% of the map area. Long captions/details scroll **inside** the card, and the map remains visible above. The header and close button stay available. Opening a mobile card from the overview refits the route above the card. After the reader moves the map, selection only pans as needed to keep a point outside the panel, preserving zoom. A `ResizeObserver` handles iframe resizing and panel changes; no user-agent detection or parent-frame scripts are needed.
+At 700px and wider, directions and selected profiles share one 350–420px panel anchored southwest, with the profile menu and reset button inside it. The graphic is capped at 1200px wide. The story header and footer have been removed. Controls and metadata use 18px text, captions 22px, and body copy 24px, with larger headings.
 
-The embed is designed for widths up to 1200px on desktop and 660px on mobile, and shrinks to narrower phone screens. Open `/embed.html` for a responsive preview (800px tall on desktop, 760px on mobile). The parent article must give the iframe a height. This app fills that viewport and does not automatically resize the parent page. Use a descriptive iframe `title`, and provide the essential reporting in the article as well. Example markup to adapt in Newspack:
+Below 700px, the shared panel flows **below** the map. The map stays 400–560px tall (70% of the viewport within that range), and long profiles expand naturally with page scrolling rather than scrolling inside a card. Opening a profile brings its header into view. On desktop, long profile content scrolls inside the panel while its heading, close button and menu stay available. A `ResizeObserver` handles resizing between layouts and keeps selected geography visible.
+
+The embed is designed for widths up to 1200px on desktop and 660px on mobile, and shrinks to narrower phone screens. Open `/embed.html` for a responsive preview (800px tall on desktop, 760px on mobile). The parent article must give the iframe a height. On desktop the app fills that viewport; on mobile the iframe scrolls vertically to show the map and the full profile below it. It does not automatically resize the parent page. Use a descriptive iframe `title`, and provide the essential reporting in the article as well. Example markup to adapt in Newspack:
 
 ```html
 <style>

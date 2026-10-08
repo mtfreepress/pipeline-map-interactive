@@ -1,5 +1,6 @@
 // Profiles and locations supplied by the newsroom. The pipeline route is sourced separately.
 // Points belong in public/data/people.geojson, linked by the same stable id.
+// County commissions use public/data/counties.geojson instead of points.
 // Fort Peck Tribes uses public/data/fort-peck-reservation.geojson instead of a point.
 export const story = {
   demo: false,

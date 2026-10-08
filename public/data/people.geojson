@@ -3,21 +3,6 @@
   "features": [
     {
       "type": "Feature",
-      "id": "valley-county-commission",
-      "properties": {
-        "id": "valley-county-commission",
-        "locationSource": "manual"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -106.63752551474171,
-          48.19275443297385
-        ]
-      }
-    },
-    {
-      "type": "Feature",
       "id": "kleeman",
       "properties": {
         "id": "kleeman",
@@ -60,21 +45,6 @@
         "coordinates": [
           -106.166119,
           48.796697
-        ]
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "carter-county-commission",
-      "properties": {
-        "id": "carter-county-commission",
-        "locationSource": "manual"
-      },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -104.54869804361391,
-          45.888481389322195
         ]
       }
     },

@@ -8,75 +8,69 @@
     <title>Along the route · Pipeline interactive</title>
   </head>
   <body>
-    <main id="app" aria-labelledby="story-title">
-      <header class="story-header">
-        <div class="story-heading">
-          <p class="eyebrow">Route &amp; community <span id="demo-badge" hidden>Demo</span></p>
-          <h1 id="story-title">Along the route</h1>
-          <p class="standfirst">Bridger pipeline · People and places along the route.</p>
-        </div>
-        <div class="explore-controls">
-          <label for="person-picker">Explore a person</label>
-          <div class="control-row">
-            <select id="person-picker" aria-controls="viewer" disabled>
-              <option value="">Choose a person…</option>
-            </select>
-            <button id="reset-map" class="route-button" type="button" disabled>Reset view</button>
-          </div>
-        </div>
-      </header>
-
+    <main id="app" aria-label="Along the route">
       <section class="map-stage" aria-label="Pipeline route and people">
-        <div id="map" aria-label="Interactive map. Use the Explore a person menu to select a profile with the keyboard."></div>
-        <div class="map-legend" aria-label="Map legend">
-          <span><i class="route-key" aria-hidden="true"></i>Pipeline</span>
-          <span><i class="person-key" aria-hidden="true"></i>Person</span>
-          <span><i class="reservation-key" aria-hidden="true"></i>Fort Peck</span>
-        </div>
-        <div id="map-status" class="map-status" role="status" aria-live="polite"></div>
-
-        <aside id="intro-panel" class="intro-panel" aria-label="About the map">
-          <span class="section-number" aria-hidden="true">ON THE MAP</span>
-          <h2>Along the route</h2>
-          <p>People and places along the Bridger pipeline route.</p>
-          <p class="intro-note">Select a map point or choose a profile to explore.</p>
-        </aside>
-
-        <section id="viewer" class="viewer" aria-labelledby="person-name" tabindex="-1" hidden>
-          <header class="viewer-header">
-            <div>
-              <p class="eyebrow">Along the route</p>
-              <h2 id="person-name"></h2>
-              <p id="person-location" class="person-location"></p>
-            </div>
-            <button id="close-viewer" class="icon-button close-button" type="button" aria-label="Close person details">×</button>
-          </header>
-          <div class="viewer-content">
-            <section class="gallery" aria-label="Photographs" aria-roledescription="carousel">
-              <figure>
-                <div id="photo-frame" class="photo-frame" aria-busy="false">
-                  <p id="photo-message" class="photo-message" role="status"></p>
-                </div>
-                <div id="carousel-controls" class="carousel-controls" hidden>
-                  <button id="previous-photo" class="icon-button" type="button" aria-label="Previous photograph">←</button>
-                  <p id="photo-count" aria-live="polite" aria-atomic="true"></p>
-                  <button id="next-photo" class="icon-button" type="button" aria-label="Next photograph">→</button>
-                </div>
-                <figcaption id="photo-caption-block">
-                  <p id="photo-caption"></p>
-                  <p id="photo-credit" class="photo-credit"></p>
-                </figcaption>
-              </figure>
-            </section>
-            <p id="person-description" class="person-description"></p>
+        <div class="map-viewport">
+          <div id="map" aria-label="Interactive map. Use the Explore a profile menu to select a profile with the keyboard."></div>
+          <div class="map-legend" aria-label="Map legend">
+            <span><i class="route-key" aria-hidden="true"></i>Pipeline</span>
+            <span><i class="person-key" aria-hidden="true"></i>Person</span>
+            <span><i class="county-key" aria-hidden="true"></i>Counties</span>
+            <span><i class="reservation-key" aria-hidden="true"></i>Fort Peck</span>
           </div>
-        </section>
+          <div id="map-status" class="map-status" role="status" aria-live="polite"></div>
+
+        </div>
+
+        <div class="profile-panel">
+          <aside id="intro-panel" class="intro-panel" aria-label="About the map">
+            <span class="section-number" aria-hidden="true">ON THE MAP</span>
+            <h2>Along the route</h2>
+            <p>People and places along the Bridger pipeline route.</p>
+            <p class="intro-note">Select a point, Fort Peck Reservation or a county commission area to explore.</p>
+          </aside>
+
+          <section id="viewer" class="viewer" aria-labelledby="person-name" tabindex="-1" hidden>
+            <header class="viewer-header">
+              <div>
+                <p class="eyebrow">Along the route</p>
+                <h2 id="person-name"></h2>
+                <p id="person-location" class="person-location"></p>
+              </div>
+              <button id="close-viewer" class="icon-button close-button" type="button" aria-label="Close person details">×</button>
+            </header>
+            <div class="viewer-content">
+              <section class="gallery" aria-label="Photographs" aria-roledescription="carousel">
+                <figure>
+                  <div id="photo-frame" class="photo-frame" aria-busy="false">
+                    <p id="photo-message" class="photo-message" role="status"></p>
+                  </div>
+                  <div id="carousel-controls" class="carousel-controls" hidden>
+                    <button id="previous-photo" class="icon-button" type="button" aria-label="Previous photograph">←</button>
+                    <p id="photo-count" aria-live="polite" aria-atomic="true"></p>
+                    <button id="next-photo" class="icon-button" type="button" aria-label="Next photograph">→</button>
+                  </div>
+                  <figcaption id="photo-caption-block">
+                    <p id="photo-caption"></p>
+                    <p id="photo-credit" class="photo-credit"></p>
+                  </figcaption>
+                </figure>
+              </section>
+              <p id="person-description" class="person-description"></p>
+            </div>
+          </section>
+          <div class="explore-controls">
+            <label for="person-picker">Explore a profile</label>
+            <div class="control-row">
+              <select id="person-picker" aria-controls="viewer" disabled>
+                <option value="">Choose a profile…</option>
+              </select>
+              <button id="reset-map" class="route-button" type="button" disabled>Reset view</button>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <footer class="story-footer">
-        <p id="data-note">Bridger route · Locations from Census geocoding and newsroom-supplied coordinates</p>
-        <span class="footer-brand">Montana Free Press</span>
-      </footer>
       <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
       <noscript><p class="noscript">This interactive requires JavaScript. Please refer to the accompanying article for the story.</p></noscript>
     </main>

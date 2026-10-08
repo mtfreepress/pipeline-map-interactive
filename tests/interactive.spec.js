@@ -7,6 +7,8 @@ const empty = { type: 'FeatureCollection', features: [] };
 const locations = JSON.parse(readFileSync(new URL('./fixtures/people.geojson', import.meta.url), 'utf8'));
 const galleryProfiles = readFileSync(new URL('./fixtures/people.js', import.meta.url), 'utf8');
 const publishedLocations = JSON.parse(readFileSync(new URL('../public/data/people.geojson', import.meta.url), 'utf8'));
+const counties = JSON.parse(readFileSync(new URL('../public/data/counties.geojson', import.meta.url), 'utf8'));
+const countyCoordinates = { 'valley-county-commission': [-106.8, 48.4], 'carter-county-commission': [-104.5, 45.6] };
 const pipeline = JSON.parse(readFileSync(new URL('../public/data/pipeline.geojson', import.meta.url), 'utf8'));
 const firstPersonCoordinates = locations.features.find((feature) => feature.properties.id === 'demo-a').geometry.coordinates;
 const routeCoordinates = pipeline.features.flatMap(({ geometry }) =>
@@ -54,18 +56,18 @@ test('desktop overview fits Montana with the intro at lower left and applies loc
   for (const person of people) {
     await page.selectOption('#person-picker', person.id);
     await expect(page.locator('#person-name')).toHaveText(person.name);
-    const selectedLayer = person.id === 'fort-peck-tribes' ? 'reservation-selected' : 'people-selected-ring';
+    const selectedLayer = person.id === 'fort-peck-tribes' ? 'reservation-selected' : person.id.endsWith('-county-commission') ? 'county-selected' : 'people-selected-ring';
     await expect.poll(() => page.evaluate((layer) => [...new Set(window.__testMap.queryRenderedFeatures({ layers: [layer] }).map((feature) => feature.properties.id))], selectedLayer)).toEqual([person.id]);
   }
   await page.getByRole('button', { name: 'Reset view' }).click();
   const overview = await page.evaluate(() => {
     const map = window.__testMap;
-    const stage = document.querySelector('.map-stage').getBoundingClientRect();
+    const stage = document.querySelector('.map-viewport').getBoundingClientRect();
     const panel = document.querySelector('#intro-panel').getBoundingClientRect();
     const corners = [[-116.1, 44.3], [-103.95, 49.1]].map((coordinate) => map.project(coordinate));
     return {
       stateVisible: corners.every((point) => point.x >= 0 && point.x < stage.width && point.y >= 0 && point.y < stage.height),
-      introLowerLeft: panel.left - stage.left < 32 && panel.top > stage.top + stage.height / 2 && panel.bottom < stage.bottom,
+      introLowerLeft: panel.left - stage.left < 32 && panel.top > stage.top + stage.height * 0.4 && panel.bottom < stage.bottom,
       easternContext: map.getBounds().getEast() > -103.95,
       water: map.getPaintProperty('water', 'fill-color'),
       waterway: map.getPaintProperty('waterway', 'line-color'),
@@ -91,7 +93,7 @@ for (const width of [1200, 660]) {
     const canvas = page.locator('.mapboxgl-canvas');
     for (const person of people) {
       const coordinate = person.id === 'fort-peck-tribes' ? [-105.5297091, 48.3675377] :
-        publishedLocations.features.find((feature) => feature.properties.id === person.id).geometry.coordinates;
+        countyCoordinates[person.id] || publishedLocations.features.find((feature) => feature.properties.id === person.id).geometry.coordinates;
       const point = await page.evaluate((coordinates) => {
         const p = window.__testMap.project(coordinates);
         return { x: p.x, y: p.y };
@@ -99,7 +101,7 @@ for (const width of [1200, 660]) {
       await canvas.hover({ position: point });
       await expect(page.getByRole('tooltip')).toContainText(person.name);
       await expect(page.getByRole('tooltip')).toContainText('Click to explore');
-      const layer = person.id === 'fort-peck-tribes' ? 'reservation-hover' : 'people-hover';
+      const layer = person.id === 'fort-peck-tribes' ? 'reservation-hover' : person.id.endsWith('-county-commission') ? 'county-hover' : 'people-hover';
       await expect.poll(() => page.evaluate((id) => window.__testMap.queryRenderedFeatures({ layers: [id] }).length, layer)).toBeGreaterThan(0);
       await expect(page.locator('#viewer')).toBeHidden();
       expect(await page.getByRole('tooltip').evaluate((el) => {
@@ -108,9 +110,9 @@ for (const width of [1200, 660]) {
       })).toBe(true);
     }
     await page.screenshot({ path: testInfo.outputPath(`hover-${width}.png`) });
-    await page.locator('#story-title').hover();
+    await page.locator('#intro-panel').hover();
     await expect(page.getByRole('tooltip')).toBeHidden();
-    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-hover', 'reservation-hover'] }).length)).toBe(0);
+    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-hover', 'reservation-hover', 'county-hover'] }).length)).toBe(0);
   });
 }
 
@@ -130,7 +132,7 @@ for (const width of [1200, 390]) {
     await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['reservation-selected'] }).length)).toBeGreaterThan(0);
     const rendered = await page.evaluate(() => {
       const map = window.__testMap;
-      const stage = document.querySelector('.map-stage').getBoundingClientRect();
+      const stage = document.querySelector('.map-viewport').getBoundingClientRect();
       const viewer = document.querySelector('#viewer').getBoundingClientRect();
       const boundary = map.getSource('reservation')._data.features[0].geometry.coordinates[0];
       return {
@@ -141,13 +143,13 @@ for (const width of [1200, 390]) {
         visible: boundary.every((coordinate) => {
           const p = map.project(coordinate);
           return p.x >= 0 && p.y >= 0 && p.x <= stage.width && p.y <= stage.height &&
-            (innerWidth < 700 ? p.y < viewer.top - stage.top : p.x < viewer.left - stage.left);
+            (innerWidth < 700 ? p.y < viewer.top - stage.top : p.x > viewer.right - stage.left);
         }),
       };
     });
     expect(rendered.color).toBe('#e6ab02');
     expect(rendered.gap).toBe(MAP_STYLE.reservationGap);
-    expect(rendered.points).toHaveLength(7);
+    expect(rendered.points).toHaveLength(5);
     expect(rendered.points).not.toContain('fort-peck-tribes');
     expect(rendered.selectedDots).toBe(0);
     expect(rendered.visible).toBe(true);
@@ -273,6 +275,7 @@ test('failed pipeline keeps profiles usable', async ({ page }) => {
 });
 
 test('empty people and unmatched profile ids have readable fallbacks', async ({ page }) => {
+  await page.route('**/data/counties.geojson', (route) => route.fulfill({ status: 503 }));
   await page.route('**/data/fort-peck-reservation.geojson', (route) => route.fulfill({ status: 503 }));
   await page.route('**/src/people.js', (route) => route.fulfill({
     contentType: 'text/javascript',
@@ -299,7 +302,7 @@ test('missing token and production assets work inside a subdirectory iframe', as
   await expect(frame.locator('#map-status')).toContainText('no Mapbox token');
   await expect(frame.locator('#demo-badge')).toBeHidden();
   await expect(frame.locator('#person-picker option')).toHaveCount(9);
-  expect([...publishedLocations.features.map((feature) => feature.properties.id), 'fort-peck-tribes'].sort()).toEqual(people.map((person) => person.id).sort());
+  expect([...publishedLocations.features.map((feature) => feature.properties.id), ...counties.features.map((feature) => feature.properties.id).filter(Boolean), 'fort-peck-tribes'].sort()).toEqual(people.map((person) => person.id).sort());
   for (const person of people) {
     await frame.locator('#person-picker').selectOption(person.id);
     await expect(frame.locator('#person-name')).toHaveText(person.name);
@@ -315,7 +318,7 @@ test('embed preview caps desktop and mobile widths and shrinks to a phone', asyn
   for (const [viewport, width, height] of [[1440, 1200, 800], [680, 660, 760], [390, 390, 760]]) {
     await page.setViewportSize({ width: viewport, height: 900 });
     await expect.poll(() => page.locator('iframe').evaluate((el) => ({ width: el.clientWidth, height: el.clientHeight }))).toEqual({ width, height });
-    await expect(page.frameLocator('iframe').locator('#story-title')).toHaveText('Along the route');
+    await expect(page.frameLocator('iframe').locator('#intro-panel h2')).toHaveText('Along the route');
   }
 });
 
@@ -327,11 +330,12 @@ for (const [width, height] of [[1200, 800], [660, 760], [320, 640], [375, 667], 
     await expect(page.locator('#photo-frame img')).toBeVisible();
     const sizing = await page.evaluate(() => {
       const panel = document.querySelector('#viewer').getBoundingClientRect();
-      const stage = document.querySelector('.map-stage').getBoundingClientRect();
+      const stage = document.querySelector('.map-viewport').getBoundingClientRect();
       const close = document.querySelector('#close-viewer').getBoundingClientRect();
       return {
-        overflow: document.documentElement.scrollWidth > innerWidth || document.documentElement.scrollHeight > innerHeight,
-        fits: panel.left >= 0 && panel.right <= innerWidth && panel.top >= stage.top && panel.bottom <= stage.bottom,
+        overflow: document.documentElement.scrollWidth > innerWidth || (innerWidth >= 700 && document.documentElement.scrollHeight > innerHeight),
+        fits: panel.left >= 0 && panel.right <= innerWidth && (innerWidth < 700 ? panel.top >= stage.bottom : panel.top >= stage.top && panel.bottom <= stage.bottom),
+        naturalFlow: getComputedStyle(document.querySelector('.viewer-content')).overflowY === 'visible',
         mapAbove: panel.top - stage.top,
         mapHeight: stage.height,
         touchTarget: close.width >= 44 && close.height >= 44,
@@ -342,11 +346,14 @@ for (const [width, height] of [[1200, 800], [660, 760], [320, 640], [375, 667], 
     expect(sizing.fits).toBe(true);
     expect(sizing.touchTarget).toBe(true);
     expect(sizing.closeUnobscured).toBe(true);
-    if (width < 700) expect(sizing.mapAbove).toBeGreaterThan(sizing.mapHeight * 0.3);
     if (width < 700) {
-      // Opening from overview must keep the complete supplied route above the mobile card.
+      expect(sizing.mapAbove).toBeGreaterThanOrEqual(sizing.mapHeight);
+      expect(sizing.naturalFlow).toBe(true);
+    }
+    if (width < 700) {
+      // The complete route remains in the map above the separate mobile profile.
       const routeVisible = await page.evaluate((coordinates) => {
-        const stage = document.querySelector('.map-stage').getBoundingClientRect();
+        const stage = document.querySelector('.map-viewport').getBoundingClientRect();
         const card = document.querySelector('#viewer').getBoundingClientRect();
         return coordinates.every((coordinate) => {
           const point = window.__testMap.project(coordinate);
@@ -361,3 +368,71 @@ for (const [width, height] of [[1200, 800], [660, 760], [320, 640], [375, 667], 
     await page.screenshot({ path: testInfo.outputPath(`viewport-${width}-${height}.png`) });
   });
 }
+
+for (const width of [1200, 390]) {
+  test(`county boundaries replace commission dots and open profiles at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    await openMap(page);
+    await expect(page.locator('.story-header, .story-footer')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__testMap.getSource('counties')._data.features.map((f) => f.properties.name).sort()))
+      .toEqual(['Carter County', 'Daniels County', 'Valley County']);
+    for (const [id, coordinates] of Object.entries(countyCoordinates)) {
+      const point = await page.evaluate((coordinates) => {
+        const p = window.__testMap.project(coordinates);
+        return { x: p.x, y: p.y };
+      }, coordinates);
+      await page.locator('.mapboxgl-canvas').click({ position: point });
+      await expect(page.locator('#person-name')).toHaveText(people.find((person) => person.id === id).name);
+      await expect.poll(() => page.evaluate(() => [...new Set(window.__testMap.queryRenderedFeatures({ layers: ['county-selected'] }).map((f) => f.properties.id))])).toEqual([id]);
+      expect(await page.evaluate(() => window.__testMap.getSource('people')._data.features.some((f) => f.properties.id.endsWith('-county-commission')))).toBe(false);
+      await page.getByRole('button', { name: 'Reset view' }).click();
+    }
+    const point = await page.evaluate(() => {
+      const p = window.__testMap.project([-105.3, 48.8]);
+      return { x: p.x, y: p.y };
+    });
+    await page.locator('.mapboxgl-canvas').click({ position: point });
+    await expect(page.locator('#viewer')).toBeHidden();
+  });
+}
+
+test('unavailable counties retain commission profiles in the menu', async ({ page }) => {
+  await page.unroute('**/src/people.js');
+  await page.unroute('**/data/people.geojson');
+  await page.route('**/data/counties.geojson', (route) => route.fulfill({ status: 503 }));
+  await openMap(page);
+  await expect(page.locator('#map-status')).toContainText('County boundaries could not be loaded');
+  for (const id of Object.keys(countyCoordinates)) {
+    await page.selectOption('#person-picker', id);
+    await expect(page.locator('#person-name')).toHaveText(people.find((person) => person.id === id).name);
+  }
+});
+
+test('open profile moves with its shared panel when the embed is resized', async ({ page }, testInfo) => {
+  await openMap(page);
+  await page.selectOption('#person-picker', 'demo-a');
+  await expect(page.locator('#photo-frame img')).toBeVisible();
+  for (const width of [1200, 390, 1200]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect.poll(() => page.evaluate(() => {
+      const map = document.querySelector('.map-viewport').getBoundingClientRect();
+      const panel = document.querySelector('.profile-panel').getBoundingClientRect();
+      return innerWidth < 700 ? panel.top >= map.bottom : panel.left < map.left + 32 && panel.bottom <= map.bottom;
+    })).toBe(true);
+    await expect(page.locator('#person-name')).toHaveText('Demo person A');
+    await expect(page.locator('.mapboxgl-canvas')).toHaveCount(1);
+    if (width < 700) {
+      await expect.poll(() => page.evaluate((coordinates) => {
+        const map = window.__testMap;
+        const stage = document.querySelector('.map-viewport');
+        return coordinates.every((coordinate) => {
+          const point = map.project(coordinate);
+          return point.x >= 0 && point.x <= stage.clientWidth && point.y >= 0 && point.y <= stage.clientHeight;
+        });
+      }, routeCoordinates)).toBe(true);
+    }
+    await page.screenshot({ path: testInfo.outputPath(`shared-panel-${width}.png`), fullPage: true });
+  }
+});
