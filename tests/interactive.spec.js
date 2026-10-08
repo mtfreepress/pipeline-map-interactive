@@ -1,14 +1,21 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { people } from '../src/people.js';
+import { MAP_STYLE } from '../src/map.js';
 
 const empty = { type: 'FeatureCollection', features: [] };
-const locations = JSON.parse(readFileSync(new URL('../public/data/people.geojson', import.meta.url), 'utf8'));
+const locations = JSON.parse(readFileSync(new URL('./fixtures/people.geojson', import.meta.url), 'utf8'));
+const galleryProfiles = readFileSync(new URL('./fixtures/people.js', import.meta.url), 'utf8');
+const publishedLocations = JSON.parse(readFileSync(new URL('../public/data/people.geojson', import.meta.url), 'utf8'));
 const pipeline = JSON.parse(readFileSync(new URL('../public/data/pipeline.geojson', import.meta.url), 'utf8'));
 const firstPersonCoordinates = locations.features.find((feature) => feature.properties.id === 'demo-a').geometry.coordinates;
 const routeCoordinates = pipeline.features.flatMap(({ geometry }) =>
   geometry.type === 'LineString' ? geometry.coordinates : geometry.coordinates.flat());
 
 test.beforeEach(async ({ page }) => {
+  // Keep gallery coverage independent of the newsroom's current photo availability.
+  await page.route('**/src/people.js', (route) => route.fulfill({ contentType: 'text/javascript', body: galleryProfiles }));
+  await page.route('**/data/people.geojson', (route) => route.fulfill({ json: locations }));
   // Test-only access to inspect actual rendered sources/layers and click their centers.
   // No test globals or hooks are shipped in the application.
   await page.route('**/src/map.js', async (route) => {
@@ -39,15 +46,26 @@ async function openMap(page) {
   await expect(page.locator('.mapboxgl-canvas')).toHaveCount(1);
 }
 
-test('desktop overview fits Montana beside the panel and applies local water colors', async ({ page }) => {
+test('desktop overview fits Montana with the intro at lower left and applies local water colors', async ({ page }) => {
+  await page.unroute('**/src/people.js');
+  await page.unroute('**/data/people.geojson');
   await openMap(page);
+  await expect(page.locator('#demo-badge')).toBeHidden();
+  for (const person of people) {
+    await page.selectOption('#person-picker', person.id);
+    await expect(page.locator('#person-name')).toHaveText(person.name);
+    const selectedLayer = person.id === 'fort-peck-tribes' ? 'reservation-selected' : 'people-selected-ring';
+    await expect.poll(() => page.evaluate((layer) => [...new Set(window.__testMap.queryRenderedFeatures({ layers: [layer] }).map((feature) => feature.properties.id))], selectedLayer)).toEqual([person.id]);
+  }
+  await page.getByRole('button', { name: 'Reset view' }).click();
   const overview = await page.evaluate(() => {
     const map = window.__testMap;
     const stage = document.querySelector('.map-stage').getBoundingClientRect();
     const panel = document.querySelector('#intro-panel').getBoundingClientRect();
     const corners = [[-116.1, 44.3], [-103.95, 49.1]].map((coordinate) => map.project(coordinate));
     return {
-      stateVisible: corners.every((point) => point.x >= 0 && point.x < panel.left - stage.left && point.y >= 0 && point.y < stage.height),
+      stateVisible: corners.every((point) => point.x >= 0 && point.x < stage.width && point.y >= 0 && point.y < stage.height),
+      introLowerLeft: panel.left - stage.left < 32 && panel.top > stage.top + stage.height / 2 && panel.bottom < stage.bottom,
       easternContext: map.getBounds().getEast() > -103.95,
       water: map.getPaintProperty('water', 'fill-color'),
       waterway: map.getPaintProperty('waterway', 'line-color'),
@@ -56,11 +74,100 @@ test('desktop overview fits Montana beside the panel and applies local water col
     };
   });
   expect(overview.stateVisible).toBe(true);
+  expect(overview.introLowerLeft).toBe(true);
   expect(overview.easternContext).toBe(true);
   expect(overview.water).toBe('#acd3e5');
   expect(overview.waterway).toBe('#6ba4c1');
   expect(overview.minZoom).toBe(8);
   expect(overview.width).toBe(0.75);
+});
+
+for (const width of [1200, 660]) {
+  test(`every profile has a named hover indicator at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    await openMap(page);
+    const canvas = page.locator('.mapboxgl-canvas');
+    for (const person of people) {
+      const coordinate = person.id === 'fort-peck-tribes' ? [-105.5297091, 48.3675377] :
+        publishedLocations.features.find((feature) => feature.properties.id === person.id).geometry.coordinates;
+      const point = await page.evaluate((coordinates) => {
+        const p = window.__testMap.project(coordinates);
+        return { x: p.x, y: p.y };
+      }, coordinate);
+      await canvas.hover({ position: point });
+      await expect(page.getByRole('tooltip')).toContainText(person.name);
+      await expect(page.getByRole('tooltip')).toContainText('Click to explore');
+      const layer = person.id === 'fort-peck-tribes' ? 'reservation-hover' : 'people-hover';
+      await expect.poll(() => page.evaluate((id) => window.__testMap.queryRenderedFeatures({ layers: [id] }).length, layer)).toBeGreaterThan(0);
+      await expect(page.locator('#viewer')).toBeHidden();
+      expect(await page.getByRole('tooltip').evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
+      })).toBe(true);
+    }
+    await page.screenshot({ path: testInfo.outputPath(`hover-${width}.png`) });
+    await page.locator('#story-title').hover();
+    await expect(page.getByRole('tooltip')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-hover', 'reservation-hover'] }).length)).toBe(0);
+  });
+}
+
+for (const width of [1200, 390]) {
+  test(`Fort Peck reservation replaces its point and opens the profile at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    await openMap(page);
+    const canvas = page.locator('.mapboxgl-canvas');
+    const point = await page.evaluate(() => {
+      const p = window.__testMap.project([-105.5297091, 48.3675377]);
+      return { x: p.x, y: p.y };
+    });
+    await canvas.click({ position: point });
+    await expect(page.locator('#person-name')).toHaveText('Fort Peck Tribes');
+    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['reservation-selected'] }).length)).toBeGreaterThan(0);
+    const rendered = await page.evaluate(() => {
+      const map = window.__testMap;
+      const stage = document.querySelector('.map-stage').getBoundingClientRect();
+      const viewer = document.querySelector('#viewer').getBoundingClientRect();
+      const boundary = map.getSource('reservation')._data.features[0].geometry.coordinates[0];
+      return {
+        color: map.getPaintProperty('reservation-outline', 'line-color'),
+        gap: map.getPaintProperty('reservation-outline', 'line-gap-width'),
+        points: map.getSource('people')._data.features.map((feature) => feature.properties.id),
+        selectedDots: map.queryRenderedFeatures({ layers: ['people-selected-ring'] }).length,
+        visible: boundary.every((coordinate) => {
+          const p = map.project(coordinate);
+          return p.x >= 0 && p.y >= 0 && p.x <= stage.width && p.y <= stage.height &&
+            (innerWidth < 700 ? p.y < viewer.top - stage.top : p.x < viewer.left - stage.left);
+        }),
+      };
+    });
+    expect(rendered.color).toBe('#e6ab02');
+    expect(rendered.gap).toBe(MAP_STYLE.reservationGap);
+    expect(rendered.points).toHaveLength(7);
+    expect(rendered.points).not.toContain('fort-peck-tribes');
+    expect(rendered.selectedDots).toBe(0);
+    expect(rendered.visible).toBe(true);
+    await page.getByRole('button', { name: 'Close person details' }).click();
+    await expect(canvas).toBeFocused();
+    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['reservation-selected'] }).length)).toBe(0);
+  });
+}
+
+test('unavailable reservation leaves the other points and Fort Peck profile usable', async ({ page }) => {
+  await page.unroute('**/src/people.js');
+  await page.unroute('**/data/people.geojson');
+  await page.route('**/data/fort-peck-reservation.geojson', (route) => route.fulfill({ status: 503 }));
+  await openMap(page);
+  await expect(page.locator('#map-status')).toContainText('Fort Peck reservation boundary could not be loaded');
+  await page.selectOption('#person-picker', 'fort-peck-tribes');
+  await expect(page.locator('#person-name')).toHaveText('Fort Peck Tribes');
+  await page.selectOption('#person-picker', 'kleeman');
+  await expect(page.locator('#person-name')).toHaveText('Kent and Kim Kleeman');
+  await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-selected-ring'] }).map((feature) => feature.properties.id))).toEqual(['kleeman']);
 });
 
 test('map-point clicks select one persistent ring, keep one map, and return focus on close', async ({ page }) => {
@@ -166,6 +273,7 @@ test('failed pipeline keeps profiles usable', async ({ page }) => {
 });
 
 test('empty people and unmatched profile ids have readable fallbacks', async ({ page }) => {
+  await page.route('**/data/fort-peck-reservation.geojson', (route) => route.fulfill({ status: 503 }));
   await page.route('**/src/people.js', (route) => route.fulfill({
     contentType: 'text/javascript',
     body: 'export const people=[]; export const story={demo:true,title:"Test route",subtitle:"Test",dataNote:"Synthetic test"};',
@@ -175,6 +283,7 @@ test('empty people and unmatched profile ids have readable fallbacks', async ({ 
   await expect(page.locator('#person-picker')).toBeDisabled();
   await expect(page.locator('#map-status')).toContainText('No person profiles');
   await page.unroute('**/data/people.geojson');
+  await page.route('**/data/people.geojson', (route) => route.fulfill({ json: locations }));
   await page.reload();
   await expect(page.locator('#reset-map')).toBeEnabled();
   await page.selectOption('#person-picker', 'demo-a');
@@ -182,19 +291,35 @@ test('empty people and unmatched profile ids have readable fallbacks', async ({ 
 });
 
 test('missing token and production assets work inside a subdirectory iframe', async ({ page }) => {
+  await page.unroute('**/data/people.geojson');
   const failed = [];
   page.on('response', (response) => { if (response.status() >= 400) failed.push(response.url()); });
   await page.goto('http://127.0.0.1:4176/article');
   const frame = page.frameLocator('iframe');
   await expect(frame.locator('#map-status')).toContainText('no Mapbox token');
-  await frame.locator('#person-picker').selectOption('demo-a');
-  await expect(frame.locator('#photo-frame img')).toBeVisible();
-  expect(await frame.locator('#photo-frame img').evaluate((img) => img.currentSrc)).toContain('/pipeline/photos/');
-  await expect(frame.locator('#photo-count')).toHaveText('1 / 4');
+  await expect(frame.locator('#demo-badge')).toBeHidden();
+  await expect(frame.locator('#person-picker option')).toHaveCount(9);
+  expect([...publishedLocations.features.map((feature) => feature.properties.id), 'fort-peck-tribes'].sort()).toEqual(people.map((person) => person.id).sort());
+  for (const person of people) {
+    await frame.locator('#person-picker').selectOption(person.id);
+    await expect(frame.locator('#person-name')).toHaveText(person.name);
+    await expect(frame.locator('#person-location')).toHaveText(person.location);
+    await expect(frame.locator('#photo-message')).toHaveText('No photographs available for this profile.');
+    await expect(frame.locator('#carousel-controls')).toBeHidden();
+  }
   expect(failed).toEqual([]);
 });
 
-for (const [width, height] of [[320, 640], [375, 667], [390, 844], [768, 700], [900, 650], [1440, 900], [390, 480], [900, 400]]) {
+test('embed preview caps desktop and mobile widths and shrinks to a phone', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4176/pipeline/embed.html');
+  for (const [viewport, width, height] of [[1440, 1200, 800], [680, 660, 760], [390, 390, 760]]) {
+    await page.setViewportSize({ width: viewport, height: 900 });
+    await expect.poll(() => page.locator('iframe').evaluate((el) => ({ width: el.clientWidth, height: el.clientHeight }))).toEqual({ width, height });
+    await expect(page.frameLocator('iframe').locator('#story-title')).toHaveText('Along the route');
+  }
+});
+
+for (const [width, height] of [[1200, 800], [660, 760], [320, 640], [375, 667], [390, 844], [768, 700], [900, 650], [1440, 900], [390, 480], [900, 400]]) {
   test(`panel fits a ${width}×${height} iframe viewport`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height });
     await openMap(page);

@@ -41,6 +41,24 @@ export function validateLocations(data) {
   return { ...collection, features };
 }
 
+export function validateReservation(data) {
+  const collection = featureCollection(data);
+  if (!collection.features.length) throw new Error('The reservation has no features.');
+  const features = collection.features.map((feature) => {
+    const geometry = feature?.geometry;
+    const polygons = geometry?.type === 'Polygon' ? [geometry.coordinates] :
+      geometry?.type === 'MultiPolygon' ? geometry.coordinates : null;
+    if (!Array.isArray(polygons) || !polygons.length || polygons.some((polygon) =>
+      !Array.isArray(polygon) || !polygon.length || polygon.some((ring) =>
+        !Array.isArray(ring) || ring.length < 4 || !ring.every(validCoordinate) ||
+        ring[0][0] !== ring.at(-1)[0] || ring[0][1] !== ring.at(-1)[1]))) {
+      throw new Error('Reservation geometry must contain valid closed Polygon or MultiPolygon rings.');
+    }
+    return { ...feature, properties: { ...feature.properties, id: 'fort-peck-tribes' } };
+  });
+  return { ...collection, features };
+}
+
 export async function fetchGeoJSON(path, validate) {
   const response = await fetch(path, { signal: AbortSignal.timeout(15000) });
   if (!response.ok) throw new Error(`Could not load ${path} (HTTP ${response.status}).`);

@@ -1,46 +1,60 @@
-// Demo profiles. The pipeline route is sourced separately from pipeline-geometry/.
-// Coordinates belong in public/data/people.geojson, linked by the same stable id.
+// Profiles and locations supplied by the newsroom. The pipeline route is sourced separately.
+// Points belong in public/data/people.geojson, linked by the same stable id.
+// Fort Peck Tribes uses public/data/fort-peck-reservation.geojson instead of a point.
 export const story = {
-  demo: true,
+  demo: false,
   title: 'Along the route',
   subtitle: 'Bridger pipeline · People and places along the route.',
-  dataNote: 'Bridger route · Demo people & images',
+  dataNote: 'Bridger route · Locations from Census geocoding and newsroom-supplied coordinates',
 };
 
 export const people = [
   {
-    id: 'demo-a',
-    name: 'Demo person A',
-    location: 'Demo location A',
-    description: 'A portrait, a place, and a few details from along the route.',
-    photos: [
-      { src: './photos/demo-portrait.svg', alt: 'Demo illustration of a human silhouette against hills.', caption: 'Demo portrait — a face along the route.', credit: 'Demo image' },
-      { src: './photos/demo-landscape.svg', alt: 'Demo illustration of rolling hills and open fields.', caption: 'Demo landscape — the surrounding hills and open fields.', credit: 'Demo image' },
-      { src: './photos/demo-home.svg', alt: 'Demo illustration of a house in an open landscape.', caption: 'Demo home — a sense of place.' },
-      { src: './photos/demo-detail.svg', alt: 'Demo illustration of a fence and grasses.', credit: 'Demo image' },
-    ],
+    id: 'valley-county-commission',
+    name: 'Valley County Commission',
+    location: 'Glasgow, MT',
+    photos: [],
   },
   {
-    id: 'demo-b',
-    name: 'Demo person B',
-    location: 'Demo location B',
-    description: 'A place along the route.',
-    photos: [{ src: './photos/demo-home.svg', alt: 'Demo illustration of a house in an open landscape.', caption: 'Demo home — a sense of place.' }],
+    id: 'kleeman',
+    name: 'Kent and Kim Kleeman',
+    location: 'Peerless, MT',
+    photos: [],
   },
   {
-    id: 'demo-c',
-    name: 'Demo person C',
-    location: 'Demo location C',
-    photos: [
-      { src: './photos/demo-landscape.svg', alt: 'Demo illustration of rolling hills and open fields.' },
-      { src: './photos/demo-detail.svg', alt: 'Demo illustration of a fence and grasses.', caption: 'Demo detail — a closer look.' },
-    ],
+    id: 'thielen',
+    name: 'Bob and Missy Thielen',
+    location: 'Plevna, MT',
+    photos: [],
   },
   {
-    id: 'demo-d',
-    name: 'Demo person D',
-    location: 'Demo location D',
-    description: 'Another stop along the route.',
+    id: 'jerry-arnold',
+    name: 'Jerry Arnold',
+    location: 'Heckner Road, Opheim, MT',
+    photos: [],
+  },
+  {
+    id: 'carter-county-commission',
+    name: 'Carter County Commission',
+    location: 'Ekalaka, MT',
+    photos: [],
+  },
+  {
+    id: 'mike-kjos',
+    name: 'Mike Kjos',
+    location: 'Fairview, MT',
+    photos: [],
+  },
+  {
+    id: 'fort-peck-tribes',
+    name: 'Fort Peck Tribes',
+    location: 'Fort Peck Reservation, MT',
+    photos: [],
+  },
+  {
+    id: 'fladager',
+    name: 'Tammi and Curtis Fladager',
+    location: 'Peerless, MT',
     photos: [],
   },
 ];

@@ -3,61 +3,110 @@
   "features": [
     {
       "type": "Feature",
-      "id": "demo-a",
+      "id": "valley-county-commission",
       "properties": {
-        "id": "demo-a",
-        "synthetic": true
+        "id": "valley-county-commission",
+        "locationSource": "manual"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -106.454388,
-          48.8059729
+          -106.63752551474171,
+          48.19275443297385
         ]
       }
     },
     {
       "type": "Feature",
-      "id": "demo-b",
+      "id": "kleeman",
       "properties": {
-        "id": "demo-b",
-        "synthetic": true
+        "id": "kleeman",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -104.2200151,
-          48.6343617
+          -105.884126077175,
+          48.759846442187
         ]
       }
     },
     {
       "type": "Feature",
-      "id": "demo-c",
+      "id": "thielen",
       "properties": {
-        "id": "demo-c",
-        "synthetic": true
+        "id": "thielen",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -104.2362786,
-          47.3235313
+          -104.450158147867,
+          46.45497029121
         ]
       }
     },
     {
       "type": "Feature",
-      "id": "demo-d",
+      "id": "jerry-arnold",
       "properties": {
-        "id": "demo-d",
-        "synthetic": true
+        "id": "jerry-arnold",
+        "locationSource": "manual"
       },
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -104.6095936,
-          45.7434866
+          -106.166119,
+          48.796697
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "carter-county-commission",
+      "properties": {
+        "id": "carter-county-commission",
+        "locationSource": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -104.54869804361391,
+          45.888481389322195
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mike-kjos",
+      "properties": {
+        "id": "mike-kjos",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -104.14950492955,
+          47.954536493075
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fladager",
+      "properties": {
+        "id": "fladager",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -105.803618754246,
+          48.809305956886
         ]
       }
     }

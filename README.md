@@ -2,7 +2,7 @@
 
 A static, iframe-ready pipeline map for a news article. Vite builds vanilla JavaScript, Mapbox GL JS, local GeoJSON and a responsive HTML photo viewer. There is one Mapbox map, no backend, database, geocoder or carousel dependency.
 
-The route comes from `pipeline-geometry/BridgerShapefile_20260326.shp`. Profiles, person locations and images are demo content. See [route conversion notes](pipeline-geometry/README.md) for the source projection and GeoJSON export command.
+The route comes from `pipeline-geometry/BridgerShapefile_20260326.shp`. Eight profiles use newsroom-supplied names and locations; photographs and captions have not been added yet. See [route conversion notes](pipeline-geometry/README.md) for the source projection and GeoJSON export command.
 
 ## Local development
 
@@ -23,7 +23,7 @@ VITE_MAPBOX_TOKEN=your_public_browser_token
 npm run dev
 ```
 
-Open the local URL printed by Vite. Without a token, the app shows a clear configuration message and still allows the example profiles to be explored. `.env.local` is ignored by Git. Never commit a newsroom token.
+Open the local URL printed by Vite. Without a token, the app shows a clear configuration message and still allows the profiles to be explored. `.env.local` is ignored by Git. Never commit a newsroom token.
 
 Vite embeds `import.meta.env.VITE_MAPBOX_TOKEN` at **build time**. Restart the development server after changing it and rebuild before publishing. A Mapbox public browser token is client-visible by design; it is not an AWS secret. Restrict the production token to the intended project URLs separately in Mapbox. This project does not change account settings.
 
@@ -32,14 +32,15 @@ Vite embeds `import.meta.env.VITE_MAPBOX_TOKEN` at **build time**. Restart the d
 | File | Purpose |
 | --- | --- |
 | `public/data/pipeline.geojson` | Bridger centerline converted from the supplied shapefile to WGS84 GeoJSON. |
-| `public/data/people.geojson` | Replace synthetic points with editorially approved person locations. |
-| `src/people.js` | Replace demo profiles and update title, subtitle, source note and `story.demo`. |
-| `public/photos/demo-*.svg` | Four demo illustrations; swap in photographs when ready. |
+| `public/data/people.geojson` | Seven point locations and their source/match metadata. |
+| `public/data/fort-peck-reservation.geojson` | Selectable Fort Peck reservation boundary, replacing the tribe’s point marker. |
+| `src/people.js` | Names, location labels, photographs, captions and story metadata. |
+| `public/photos/` | Add profile photographs here. The four demo illustrations are retained for gallery tests. |
 | `index.html` | Update the page description and any fixed introductory/branding copy. |
 | `src/style.css` | Color/typography tokens and responsive layout. |
 | `src/map.js` | `MAP_VIEW` for the opening extent/padding; `MAP_STYLE` for basemap, water, line widths and point radii. |
 
-`src/main.js` coordinates selection, focus and fallbacks. `src/gallery.js` owns the carousel and image lifecycle. `src/data.js` validates local geography. Demo points are spaced along the supplied route; they are not personal addresses and no geocoding is used. Panel text sizes are controlled by `--panel-body-size`, `--panel-caption-size` and `--panel-meta-size` in `src/style.css`, including on mobile.
+`src/main.js` coordinates selection, focus and fallbacks. `src/gallery.js` owns the carousel and image lifecycle. `src/data.js` validates local geography. Profile coordinates are stored locally; no geocoding runs in the browser. Panel text sizes are controlled by `--panel-body-size`, `--panel-caption-size` and `--panel-meta-size` in `src/style.css`, including on mobile.
 
 ### Map extent, water and basemap
 
@@ -53,7 +54,7 @@ mobileBounds: null,
 desktopPadding: { top: 66, left: 48, bottom: 60, panelGap: 48 },
 ```
 
-The desktop extent loosely encloses Montana. The app fits that box into the space to the left of the side panel; geography continues east beneath the panel, toward North Dakota. The panel width is measured automatically. `panelGap` adds breathing room between the fitted area and the panel; you do not need to add North Dakota to the bounds yourself. Aspect ratio determines how much neighboring geography is visible. These are camera bounds, not a boundary outline or a limit on panning. `null` fits the route instead, which remains the default on mobile. **Reset view** restores the configured overview.
+The desktop overview loosely encloses Montana across the full map, with a compact intro card at the lower left. When a profile opens on the right, camera padding reserves space for that panel. The panel width is measured automatically. `panelGap` adds breathing room between the fitted area and the panel; you do not need to add North Dakota to the bounds yourself. Aspect ratio determines how much neighboring geography is visible. These are camera bounds, not a boundary outline or a limit on panning. `null` fits the route instead, which remains the default on mobile. **Reset view** restores the configured overview.
 
 **Water colors and detail.** The current Light basemap stays in place, with local paint overrides:
 
@@ -109,6 +110,10 @@ The route accepts a GeoJSON `Feature` or `FeatureCollection` containing `LineStr
 
 ### Person locations
 
+The Kleeman, Thielen, Kjos and Fladager points use the supplied exact Census address matches. Valley County Commission, Jerry Arnold and Carter County Commission use manually supplied coordinates. Valley County's manual point supersedes its non-exact Census result; Carter County's manual point replaces its unmatched address. Jerry Arnold's point identifies the supplied location on Heckner Road, not a geocoded numbered address. Manual latitude/longitude pairs have been reversed into GeoJSON's longitude/latitude order. `locationSource` records `census` or `manual`; Census points also retain `geocodeMatch`.
+
+Fort Peck Tribes uses the Polygon/MultiPolygon boundary in `public/data/fort-peck-reservation.geojson` instead of a point. The loader links its features to `fort-peck-tribes` while retaining the supplied properties. The boundary has two parallel `#e6ab02` strokes, controlled by `MAP_STYLE.reservationColor`, `reservationWidth` and `reservationGap`. Clicking its interior or outline opens the profile; point markers take priority when hit areas overlap. Selection thickens the boundary and fits it into the visible map area when necessary. If the boundary fails to load, the other points and all profiles remain available.
+
 `public/data/people.geojson` is a `FeatureCollection` of `Point` features. Each needs a unique, nonempty **string** `properties.id` matching the metadata. A top-level feature `id` is optional; it is normalized from `properties.id`. Keep identifiers stable as names or photographs change.
 
 ```json
@@ -148,12 +153,13 @@ Photograph URLs resolve relative to the document, so `./photos/...` works from `
 
 Optional descriptions, locations, captions and credits are omitted when absent. One photograph hides the carousel controls/count. Zero photographs displays a text fallback. Unknown person ids display an unavailable-profile message and preserve the selected location. Malformed/failed location data leaves available editorial profiles accessible in the menu. Failed route data produces a clear message; the app does not pretend to show a valid route.
 
-When replacing the demo profiles and images, set `story.demo: false`, update `story.dataNote` and the HTML meta description. Retain the `story` export alongside `people`. The route already uses the supplied Bridger geometry.
+`story.demo` is `false` for the supplied profiles. Update `story.dataNote` and the HTML meta description when the source or scope changes. Retain the `story` export alongside `people`. The route already uses the supplied Bridger geometry.
 
 ## Reader experience and accessibility
 
-- Montana is fitted on desktop, with space reserved for the introductory/photo panel. Mobile fits the full route. No person is selected initially.
+- Montana is fitted on desktop with the intro card at the lower left; open profiles use the right side. Mobile fits the full route. No person is selected initially.
 - Circle layers represent people; a larger selected point and an outlined ring provide a persistent selection that does not depend only on color. Invisible 44-pixel-diameter hit areas make tapping easier.
+- Hover over a point to enlarge it and see its name with a “Click to explore” prompt. Hovering over Fort Peck shades the reservation and shows its name. Tooltips clear when the pointer leaves, the map moves, or a profile is selected.
 - Select a map point or use the native **Explore a person** menu. The menu gives keyboard and screen-reader users access to the same profiles without navigating a map canvas.
 - Selection opens the HTML viewer, resets the gallery to its first photograph, and moves focus to the labeled viewer. Closing or pressing Escape within the viewer returns focus to the initiating menu or map canvas.
 - Previous/next buttons and left/right keys **inside the viewer** wrap at both ends. There are no global arrow-key handlers or required swipe gestures.
@@ -162,22 +168,28 @@ When replacing the demo profiles and images, set `story.demo: false`, update `st
 
 ### Responsive panels and iframe sizing
 
-At 700px and wider, a 320–400px panel sits on the right. Below 700px, it becomes a stable bottom card capped at 56% of the map area. Long captions/details scroll **inside** the card, and the map remains visible above. The header and close button stay available. Opening a mobile card from the overview refits the route above the card. After the reader moves the map, selection only pans as needed to keep a point outside the panel, preserving zoom. A `ResizeObserver` handles iframe resizing and panel changes; no user-agent detection or parent-frame scripts are needed.
+At 700px and wider, a compact intro card sits at the lower left and selected profiles open in a 340–420px panel on the right. Interface text uses 16–22px for most controls and body copy, with larger headings. Below 700px, it becomes a stable bottom card capped at 56% of the map area. Long captions/details scroll **inside** the card, and the map remains visible above. The header and close button stay available. Opening a mobile card from the overview refits the route above the card. After the reader moves the map, selection only pans as needed to keep a point outside the panel, preserving zoom. A `ResizeObserver` handles iframe resizing and panel changes; no user-agent detection or parent-frame scripts are needed.
 
-The parent article must give the iframe a height. This app fills that viewport and does not automatically resize the parent page. Use a descriptive iframe `title`, and provide the essential reporting in the article as well. Example markup to adapt in Newspack:
+The embed is designed for widths up to 1200px on desktop and 660px on mobile, and shrinks to narrower phone screens. Open `/embed.html` for a responsive preview (800px tall on desktop, 760px on mobile). The parent article must give the iframe a height. This app fills that viewport and does not automatically resize the parent page. Use a descriptive iframe `title`, and provide the essential reporting in the article as well. Example markup to adapt in Newspack:
 
 ```html
+<style>
+  .pipeline-embed { display: block; width: 100%; max-width: 1200px; height: 800px; margin: 0 auto; border: 0; }
+  @media (max-width: 699px) {
+    .pipeline-embed { max-width: 660px; height: 760px; }
+  }
+</style>
 <iframe
+  class="pipeline-embed"
   src="https://projects.montanafreepress.org/pipeline/index.html"
   title="Pipeline route and people living nearby"
   loading="lazy"
-  width="100%"
-  height="760"
-  style="display:block; width:100%; height:clamp(560px, 85svh, 860px); border:0;"
+  width="1200"
+  height="800"
 ></iframe>
 ```
 
-The host URL above is illustrative; nothing is deployed by this repository. Check the actual article at 320, 375/390, 768/900 and wider widths and at short iframe heights. The browser suite also checks these viewport sizes. Very short embeds force readers to scroll the photo panel more; use at least 560px height when the article layout permits. Verify the final embed with keyboard navigation, VoiceOver or another screen reader, and the actual production photos.
+The host URL above is illustrative; nothing is deployed by this repository. Check the actual article at 320, 375/390, 660, 768/900 and 1200px widths and at short iframe heights. The browser suite also checks these viewport sizes. Very short embeds force readers to scroll the photo panel more; use at least 560px height when the article layout permits. Verify the final embed with keyboard navigation, VoiceOver or another screen reader, and the actual production photos.
 
 ### Image loading
 
@@ -209,7 +221,7 @@ The intended target is an existing S3/CloudFront setup under `s3://<bucket>/pipe
 
 Before publication:
 
-1. Replace and editorially verify all synthetic content. Configure the public token's allowed project URLs separately in Mapbox, and check its use from the final iframe.
+1. Editorially verify the supplied profiles and locations, and add photographs and captions when available. Configure the public token's allowed project URLs separately in Mapbox, and check its use from the final iframe.
 2. Build with the production token. Serve HTML as `text/html`, JS as `text/javascript`, CSS as `text/css`, GeoJSON as `application/geo+json` or `application/json`, WebP as `image/webp`, and SVG as `image/svg+xml`.
 3. Give hashed `assets/` files long immutable caching. Keep `index.html`, GeoJSON and photographs on a shorter cache policy, or use new photo filenames when replacing images. Local GeoJSON and photo names are not content-hashed. Invalidate updated non-hashed CloudFront paths as needed.
 4. Verify the host's response headers allow the intended WordPress/Newspack site to frame the project (`frame-ancestors` and any `X-Frame-Options` policy). If adding a CSP, allow the Mapbox endpoints and blob workers required by your installed Mapbox version. Test the real embed rather than guessing a restrictive policy.

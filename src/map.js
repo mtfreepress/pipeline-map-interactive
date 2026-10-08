@@ -1,7 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 
 // Opening/reset view: [[west, south], [east, north]], in longitude/latitude.
-// null fits the pipeline instead. Right padding reserves space for the desktop panel.
+// null fits the pipeline instead. Right padding reserves space for an open profile.
 export const MAP_VIEW = {
   desktopBounds: [[-116.1, 44.3], [-103.95, 49.1]],
   mobileBounds: null,
@@ -21,9 +21,12 @@ export const MAP_STYLE = {
   },
   routeWidth: 4,
   casingWidth: 7,
-  pointRadius: 6,
+  pointRadius: 8,
   selectedRadius: 10,
   hitRadius: 22,
+  reservationColor: '#e6ab02',
+  reservationWidth: 1.5,
+  reservationGap: 0,
   duration: 350,
 };
 
@@ -46,7 +49,7 @@ function styleWater(map) {
   }
 }
 
-export function createRouteMap({ token, pipeline, locations, onSelect, onStatus, onReady }) {
+export function createRouteMap({ token, pipeline, locations, reservation, profiles, onSelect, onStatus, onReady }) {
   const stage = document.querySelector('.map-stage');
   const viewer = document.querySelector('#viewer');
   const intro = document.querySelector('#intro-panel');
@@ -58,9 +61,25 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
     const lines = feature.geometry.type === 'LineString' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
     lines.forEach((line) => line.forEach((coordinate) => bounds.extend(coordinate)));
   }
+  const reservationBounds = new mapboxgl.LngLatBounds();
+  for (const feature of reservation.features) {
+    const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+    polygons.forEach((polygon) => polygon.forEach((ring) => ring.forEach((coordinate) => reservationBounds.extend(coordinate))));
+  }
   let selectedId = null;
   let ready = false;
   let overview = true;
+  let hoveredId = null;
+  const profileNames = new Map(profiles.map((person) => [person.id, person.name]));
+  const tooltip = document.createElement('div');
+  tooltip.className = 'map-tooltip';
+  tooltip.hidden = true;
+  tooltip.setAttribute('role', 'tooltip');
+  const tooltipName = document.createElement('strong');
+  const tooltipHint = document.createElement('span');
+  tooltipHint.textContent = 'Click to explore';
+  tooltip.append(tooltipName, tooltipHint);
+  stage.append(tooltip);
 
   function overviewBounds() {
     return (narrow.matches ? MAP_VIEW.mobileBounds : MAP_VIEW.desktopBounds) ?? bounds;
@@ -71,10 +90,11 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
     const rect = stage.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
     if (narrow.matches) {
-      return { top: 60, left: 32, right: 32, bottom: Math.min(Math.max(0, rect.height - 80), panelRect.height + 50) };
+      const top = Math.min(110, rect.height * 0.2);
+      return { top, left: 24, right: 24, bottom: Math.min(Math.max(0, rect.height - top - 40), panelRect.height + 50) };
     }
     const { top, left, bottom, panelGap } = MAP_VIEW.desktopPadding;
-    return { top, left, bottom, right: Math.min(rect.width * 0.55, panelRect.width + panelGap) };
+    return { top, left, bottom, right: viewer.hidden ? left : Math.min(rect.width * 0.55, panelRect.width + panelGap) };
   }
 
   const map = new mapboxgl.Map({
@@ -116,8 +136,28 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
     const selectedColor = colors.getPropertyValue('--selected').trim();
     map.addSource('pipeline', { type: 'geojson', data: pipeline });
     map.addSource('people', { type: 'geojson', data: locations, promoteId: 'id' });
+    map.addSource('reservation', { type: 'geojson', data: reservation });
     // Keep basemap text above the route for geographic context.
     const firstLabel = map.getStyle().layers.find((layer) => layer.type === 'symbol')?.id;
+    map.addLayer({
+      id: 'reservation-hit-area', type: 'fill', source: 'reservation',
+      paint: { 'fill-opacity': 0 },
+    }, firstLabel);
+    // A transparent gap creates two parallel strokes along the polygon boundary.
+    map.addLayer({
+      id: 'reservation-outline', type: 'line', source: 'reservation',
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': MAP_STYLE.reservationColor, 'line-width': MAP_STYLE.reservationWidth, 'line-gap-width': MAP_STYLE.reservationGap },
+    }, firstLabel);
+    map.addLayer({
+      id: 'reservation-hover', type: 'fill', source: 'reservation', filter: ['==', ['get', 'id'], ''],
+      paint: { 'fill-color': MAP_STYLE.reservationColor, 'fill-opacity': 0.18 },
+    }, firstLabel);
+    map.addLayer({
+      id: 'reservation-selected', type: 'line', source: 'reservation', filter: ['==', ['get', 'id'], ''],
+      layout: { 'line-join': 'round' },
+      paint: { 'line-color': MAP_STYLE.reservationColor, 'line-width': MAP_STYLE.reservationWidth + 1, 'line-gap-width': MAP_STYLE.reservationGap },
+    }, firstLabel);
     map.addLayer({
       id: 'pipeline-casing', type: 'line', source: 'pipeline',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
@@ -133,6 +173,10 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
       paint: { 'circle-radius': MAP_STYLE.pointRadius, 'circle-color': '#ffffff', 'circle-stroke-width': 2.5, 'circle-stroke-color': pointColor },
     });
     map.addLayer({
+      id: 'people-hover', type: 'circle', source: 'people', filter: ['==', ['get', 'id'], ''],
+      paint: { 'circle-radius': MAP_STYLE.pointRadius + 4, 'circle-color': '#ffffff', 'circle-stroke-width': 3, 'circle-stroke-color': pointColor },
+    });
+    map.addLayer({
       id: 'people-selected-ring', type: 'circle', source: 'people', filter: ['==', ['get', 'id'], ''],
       paint: { 'circle-radius': MAP_STYLE.selectedRadius + 4, 'circle-color': '#ffffff', 'circle-stroke-width': 2, 'circle-stroke-color': pointColor },
     });
@@ -144,22 +188,55 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
       id: 'people-hit-area', type: 'circle', source: 'people',
       paint: { 'circle-radius': MAP_STYLE.hitRadius, 'circle-opacity': 0 },
     });
-    map.on('click', 'people-hit-area', (event) => {
+    function featureAt(point) {
       // Choose the nearest center when generous touch areas overlap.
-      const nearest = event.features.map((feature) => {
+      // Points take priority over the reservation interior underneath them.
+      const nearest = map.queryRenderedFeatures(point, { layers: ['people-hit-area'] }).map((feature) => {
         const screen = map.project(feature.geometry.coordinates);
-        return { feature, distance: Math.hypot(screen.x - event.point.x, screen.y - event.point.y) };
+        return { feature, distance: Math.hypot(screen.x - point.x, screen.y - point.y) };
       }).sort((a, b) => a.distance - b.distance)[0]?.feature;
-      if (nearest) onSelect(nearest.properties.id, map.getCanvas());
+      return nearest ?? map.queryRenderedFeatures(point, { layers: ['reservation-hit-area', 'reservation-outline'] })[0];
+    }
+    map.on('click', (event) => {
+      const feature = featureAt(event.point);
+      clearHover();
+      if (feature) onSelect(feature.properties.id, map.getCanvas());
     });
-    map.on('mouseenter', 'people-hit-area', () => { map.getCanvas().style.cursor = 'pointer'; });
-    map.on('mouseleave', 'people-hit-area', () => { map.getCanvas().style.cursor = ''; });
+    map.on('mousemove', (event) => {
+      if (map.isMoving()) return;
+      const feature = featureAt(event.point);
+      if (!feature) { clearHover(); return; }
+      const id = feature.properties.id;
+      if (hoveredId !== id) {
+        hoveredId = id;
+        const filter = ['==', ['get', 'id'], id];
+        map.setFilter('people-hover', filter);
+        map.setFilter('reservation-hover', filter);
+        tooltipName.textContent = profileNames.get(id) || 'Explore this location';
+      }
+      map.getCanvas().style.cursor = 'pointer';
+      tooltip.hidden = false;
+      // Keep the label within the iframe, including markers near its edges.
+      tooltip.style.left = `${Math.max(12, Math.min(event.point.x + 18, stage.clientWidth - tooltip.offsetWidth - 12))}px`;
+      const top = event.point.y - tooltip.offsetHeight - 18;
+      tooltip.style.top = `${Math.max(12, Math.min(top < 12 ? event.point.y + 18 : top, stage.clientHeight - tooltip.offsetHeight - 12))}px`;
+    });
+    map.getCanvas().addEventListener('mouseleave', clearHover);
     ready = true;
     select(selectedId, false);
     if (!selectedId) resetView(false);
     onStatus('');
     onReady();
   });
+
+  function clearHover() {
+    tooltip.hidden = true;
+    map.getCanvas().style.cursor = '';
+    if (!hoveredId) return;
+    hoveredId = null;
+    map.setFilter('people-hover', ['==', ['get', 'id'], '']);
+    map.setFilter('reservation-hover', ['==', ['get', 'id'], '']);
+  }
 
   function resetView(animate = true) {
     overview = true;
@@ -171,6 +248,18 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
   }
 
   function keepSelectedVisible(animate = true) {
+    if (selectedId === 'fort-peck-tribes' && !reservationBounds.isEmpty()) {
+      const safe = padding();
+      const corners = [reservationBounds.getNorthWest(), reservationBounds.getSouthEast()].map((corner) => map.project(corner));
+      if (corners.some((point) => point.x < safe.left || point.x > stage.clientWidth - safe.right ||
+        point.y < safe.top || point.y > stage.clientHeight - safe.bottom)) {
+        map.fitBounds(reservationBounds, {
+          padding: safe, retainPadding: false, maxZoom: 12,
+          duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
+        });
+      }
+      return;
+    }
     const feature = locations.features.find((item) => item.properties.id === selectedId);
     if (!feature) return;
     const point = map.project(feature.geometry.coordinates);
@@ -187,17 +276,19 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
   }
 
   function select(id, animate = true) {
+    clearHover();
     selectedId = id;
     if (!ready) return;
     const filter = ['==', ['get', 'id'], id ?? ''];
     map.setFilter('people-selected-ring', filter);
     map.setFilter('people-selected', filter);
+    map.setFilter('reservation-selected', filter);
     if (id) {
       // Opening the mobile card from the overview should not cover the lower route.
       // Once the reader has moved the map, preserve their chosen zoom instead.
       const fromOverview = overview;
       overview = false;
-      if (fromOverview && narrow.matches) {
+      if (fromOverview && narrow.matches && id !== 'fort-peck-tribes') {
         map.fitBounds(overviewBounds(), {
           padding: padding(), retainPadding: false,
           duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
@@ -207,7 +298,7 @@ export function createRouteMap({ token, pipeline, locations, onSelect, onStatus,
     }
   }
 
-  map.on('movestart', (event) => { if (event.originalEvent) overview = false; });
+  map.on('movestart', (event) => { clearHover(); if (event.originalEvent) overview = false; });
   // Handles iframe resizing and a panel changing size after image/text updates.
   let resizeFrame;
   const observer = new ResizeObserver(() => {
