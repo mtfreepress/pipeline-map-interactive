@@ -1,18 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { people } from '../src/people.js';
-import { MAP_STYLE } from '../src/map.js';
+import { MAP_STYLE, CITY_LABELS } from '../src/map.js';
 
 const empty = { type: 'FeatureCollection', features: [] };
 const locations = JSON.parse(readFileSync(new URL('./fixtures/people.geojson', import.meta.url), 'utf8'));
 const galleryProfiles = readFileSync(new URL('./fixtures/people.js', import.meta.url), 'utf8');
 const publishedLocations = JSON.parse(readFileSync(new URL('../public/data/people.geojson', import.meta.url), 'utf8'));
-const counties = JSON.parse(readFileSync(new URL('../public/data/counties.geojson', import.meta.url), 'utf8'));
-const countyCoordinates = { 'valley-county-commission': [-106.8, 48.4], 'carter-county-commission': [-104.5, 45.6] };
-const pipeline = JSON.parse(readFileSync(new URL('../public/data/pipeline.geojson', import.meta.url), 'utf8'));
-const firstPersonCoordinates = locations.features.find((feature) => feature.properties.id === 'demo-a').geometry.coordinates;
-const routeCoordinates = pipeline.features.flatMap(({ geometry }) =>
-  geometry.type === 'LineString' ? geometry.coordinates : geometry.coordinates.flat());
 
 test.beforeEach(async ({ page }) => {
   // Keep gallery coverage independent of the newsroom's current photo availability.
@@ -22,7 +16,7 @@ test.beforeEach(async ({ page }) => {
   // No test globals or hooks are shipped in the application.
   await page.route('**/src/map.js', async (route) => {
     const response = await route.fetch();
-    const body = (await response.text()).replace('map.touchZoomRotate.disableRotation();',
+    const body = (await response.text()).replace("container: 'map',", "container: 'map', localFontFamily: 'Arial',").replace('map.touchZoomRotate.disableRotation();',
       'window.__testMap = map; map.touchZoomRotate.disableRotation();');
     await route.fulfill({ response, body });
   });
@@ -31,10 +25,19 @@ test.beforeEach(async ({ page }) => {
     if (route.request().url().includes('/styles/v1/')) {
       await route.fulfill({ json: {
         version: 8,
-        sources: { 'test-water': { type: 'geojson', data: empty } },
+        glyphs: 'https://api.mapbox.com/fonts/v1/mapbox/{fontstack}/{range}.pbf',
+        sources: {
+          'test-water': { type: 'geojson', data: empty },
+          'test-places': { type: 'geojson', data: { type: 'FeatureCollection', features: [
+            { type: 'Feature', properties: { name: 'Glasgow' }, geometry: { type: 'Point', coordinates: [-106.63, 48.19] } },
+            { type: 'Feature', properties: { name: 'Circle' }, geometry: { type: 'Point', coordinates: [-105.59, 47.41] } },
+          ] } },
+        },
         layers: [
           { id: 'local-background', type: 'background', paint: { 'background-color': '#e6e9e1' } },
           { id: 'water', type: 'fill', source: 'test-water', paint: { 'fill-color': '#cccccc' } },
+          { id: 'settlement-label', type: 'symbol', source: 'test-places', layout: { 'text-field': ['get', 'name'], 'text-size': 12 } },
+          { id: 'state-label', type: 'symbol', source: 'test-water', layout: { 'text-field': ['get', 'name'], 'text-size': 14 } },
           { id: 'waterway', type: 'line', source: 'test-water', minzoom: 8, paint: { 'line-color': '#cccccc', 'line-width': 0.75 } },
         ],
       } });
@@ -44,153 +47,20 @@ test.beforeEach(async ({ page }) => {
 
 async function openMap(page) {
   await page.goto('/');
-  await expect(page.locator('#reset-map')).toBeEnabled();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__testMap?.getLayer('people-hit-area')))).toBe(true);
   await expect(page.locator('.mapboxgl-canvas')).toHaveCount(1);
 }
 
-test('desktop overview fits Montana with the intro at lower left and applies local water colors', async ({ page }) => {
-  await page.unroute('**/src/people.js');
-  await page.unroute('**/data/people.geojson');
-  await openMap(page);
-  await expect(page.locator('#demo-badge')).toBeHidden();
-  for (const person of people) {
-    await page.selectOption('#person-picker', person.id);
-    await expect(page.locator('#person-name')).toHaveText(person.name);
-    const selectedLayer = person.id === 'fort-peck-tribes' ? 'reservation-selected' : person.id.endsWith('-county-commission') ? 'county-selected' : 'people-selected-ring';
-    await expect.poll(() => page.evaluate((layer) => [...new Set(window.__testMap.queryRenderedFeatures({ layers: [layer] }).map((feature) => feature.properties.id))], selectedLayer)).toEqual([person.id]);
+async function selectProfile(page, id) {
+  if (await page.locator('#viewer').isVisible()) await page.getByRole('button', { name: 'Close person details' }).click();
+  const direct = page.locator(`.map-buttons [data-profile-id="${id}"]`);
+  if (await direct.count()) {
+    await direct.click();
+  } else {
+    await page.locator(`.map-buttons [data-profile-ids*="${id}"]`).click();
+    await page.locator(`.profile-choice[data-profile-id="${id}"]`).click();
   }
-  await page.getByRole('button', { name: 'Reset view' }).click();
-  const overview = await page.evaluate(() => {
-    const map = window.__testMap;
-    const stage = document.querySelector('.map-viewport').getBoundingClientRect();
-    const panel = document.querySelector('#intro-panel').getBoundingClientRect();
-    const corners = [[-116.1, 44.3], [-103.95, 49.1]].map((coordinate) => map.project(coordinate));
-    return {
-      stateVisible: corners.every((point) => point.x >= 0 && point.x < stage.width && point.y >= 0 && point.y < stage.height),
-      introLowerLeft: panel.left - stage.left < 32 && panel.top > stage.top + stage.height * 0.4 && panel.bottom < stage.bottom,
-      easternContext: map.getBounds().getEast() > -103.95,
-      water: map.getPaintProperty('water', 'fill-color'),
-      waterway: map.getPaintProperty('waterway', 'line-color'),
-      minZoom: map.getLayer('waterway').minzoom,
-      width: map.getPaintProperty('waterway', 'line-width'),
-    };
-  });
-  expect(overview.stateVisible).toBe(true);
-  expect(overview.introLowerLeft).toBe(true);
-  expect(overview.easternContext).toBe(true);
-  expect(overview.water).toBe('#acd3e5');
-  expect(overview.waterway).toBe('#6ba4c1');
-  expect(overview.minZoom).toBe(8);
-  expect(overview.width).toBe(0.75);
-});
-
-for (const width of [1200, 660]) {
-  test(`every profile has a named hover indicator at ${width}px`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ width, height: 800 });
-    await page.unroute('**/src/people.js');
-    await page.unroute('**/data/people.geojson');
-    await openMap(page);
-    const canvas = page.locator('.mapboxgl-canvas');
-    for (const person of people) {
-      const coordinate = person.id === 'fort-peck-tribes' ? [-105.5297091, 48.3675377] :
-        countyCoordinates[person.id] || publishedLocations.features.find((feature) => feature.properties.id === person.id).geometry.coordinates;
-      const point = await page.evaluate((coordinates) => {
-        const p = window.__testMap.project(coordinates);
-        return { x: p.x, y: p.y };
-      }, coordinate);
-      await canvas.hover({ position: point });
-      await expect(page.getByRole('tooltip')).toContainText(person.name);
-      await expect(page.getByRole('tooltip')).toContainText('Click to explore');
-      const layer = person.id === 'fort-peck-tribes' ? 'reservation-hover' : person.id.endsWith('-county-commission') ? 'county-hover' : 'people-hover';
-      await expect.poll(() => page.evaluate((id) => window.__testMap.queryRenderedFeatures({ layers: [id] }).length, layer)).toBeGreaterThan(0);
-      await expect(page.locator('#viewer')).toBeHidden();
-      expect(await page.getByRole('tooltip').evaluate((el) => {
-        const r = el.getBoundingClientRect();
-        return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight;
-      })).toBe(true);
-    }
-    await page.screenshot({ path: testInfo.outputPath(`hover-${width}.png`) });
-    await page.locator('#intro-panel').hover();
-    await expect(page.getByRole('tooltip')).toBeHidden();
-    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-hover', 'reservation-hover', 'county-hover'] }).length)).toBe(0);
-  });
 }
-
-for (const width of [1200, 390]) {
-  test(`Fort Peck reservation replaces its point and opens the profile at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 844 });
-    await page.unroute('**/src/people.js');
-    await page.unroute('**/data/people.geojson');
-    await openMap(page);
-    const canvas = page.locator('.mapboxgl-canvas');
-    const point = await page.evaluate(() => {
-      const p = window.__testMap.project([-105.5297091, 48.3675377]);
-      return { x: p.x, y: p.y };
-    });
-    await canvas.click({ position: point });
-    await expect(page.locator('#person-name')).toHaveText('Fort Peck Tribes');
-    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['reservation-selected'] }).length)).toBeGreaterThan(0);
-    const rendered = await page.evaluate(() => {
-      const map = window.__testMap;
-      const stage = document.querySelector('.map-viewport').getBoundingClientRect();
-      const viewer = document.querySelector('#viewer').getBoundingClientRect();
-      const boundary = map.getSource('reservation')._data.features[0].geometry.coordinates[0];
-      return {
-        color: map.getPaintProperty('reservation-outline', 'line-color'),
-        gap: map.getPaintProperty('reservation-outline', 'line-gap-width'),
-        points: map.getSource('people')._data.features.map((feature) => feature.properties.id),
-        selectedDots: map.queryRenderedFeatures({ layers: ['people-selected-ring'] }).length,
-        visible: boundary.every((coordinate) => {
-          const p = map.project(coordinate);
-          return p.x >= 0 && p.y >= 0 && p.x <= stage.width && p.y <= stage.height &&
-            (innerWidth < 700 ? p.y < viewer.top - stage.top : p.x > viewer.right - stage.left);
-        }),
-      };
-    });
-    expect(rendered.color).toBe('#e6ab02');
-    expect(rendered.gap).toBe(MAP_STYLE.reservationGap);
-    expect(rendered.points).toHaveLength(5);
-    expect(rendered.points).not.toContain('fort-peck-tribes');
-    expect(rendered.selectedDots).toBe(0);
-    expect(rendered.visible).toBe(true);
-    await page.getByRole('button', { name: 'Close person details' }).click();
-    await expect(canvas).toBeFocused();
-    await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['reservation-selected'] }).length)).toBe(0);
-  });
-}
-
-test('unavailable reservation leaves the other points and Fort Peck profile usable', async ({ page }) => {
-  await page.unroute('**/src/people.js');
-  await page.unroute('**/data/people.geojson');
-  await page.route('**/data/fort-peck-reservation.geojson', (route) => route.fulfill({ status: 503 }));
-  await openMap(page);
-  await expect(page.locator('#map-status')).toContainText('Fort Peck reservation boundary could not be loaded');
-  await page.selectOption('#person-picker', 'fort-peck-tribes');
-  await expect(page.locator('#person-name')).toHaveText('Fort Peck Tribes');
-  await page.selectOption('#person-picker', 'kleeman');
-  await expect(page.locator('#person-name')).toHaveText('Kent and Kim Kleeman');
-  await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-selected-ring'] }).map((feature) => feature.properties.id))).toEqual(['kleeman']);
-});
-
-test('map-point clicks select one persistent ring, keep one map, and return focus on close', async ({ page }) => {
-  await openMap(page);
-  const canvas = page.locator('.mapboxgl-canvas');
-  const point = await page.evaluate((coordinates) => {
-    const p = window.__testMap.project(coordinates);
-    return { x: p.x, y: p.y };
-  }, firstPersonCoordinates);
-  await canvas.click({ position: point });
-  await expect(page.locator('#person-name')).toHaveText('Demo person A');
-  await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-selected-ring'] }).map((feature) => feature.properties.id))).toEqual(['demo-a']);
-  await page.selectOption('#person-picker', 'demo-c');
-  await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-selected-ring'] }).map((feature) => feature.properties.id))).toEqual(['demo-c']);
-  await page.getByRole('button', { name: 'Reset view' }).click();
-  await expect.poll(() => page.evaluate(() => window.__testMap.queryRenderedFeatures({ layers: ['people-selected-ring'] }).length)).toBe(0);
-  await canvas.click({ position: point });
-  await page.getByRole('button', { name: 'Close person details' }).click();
-  await expect(canvas).toBeFocused();
-  await expect(canvas).toHaveCount(1);
-});
 
 test('real map loads without runtime errors; gallery loads on demand and wraps', async ({ page }) => {
   const errors = [];
@@ -203,7 +73,7 @@ test('real map loads without runtime errors; gallery loads on demand and wraps',
   await openMap(page);
   expect(photos.size).toBe(0);
   await expect(page.locator('#viewer')).toBeHidden();
-  await page.selectOption('#person-picker', 'demo-a');
+  await selectProfile(page, 'demo-a');
   await expect(page.locator('#viewer')).toBeFocused();
   await expect(page.locator('#photo-frame img')).toBeVisible();
   await expect.poll(() => photos.size).toBe(3);
@@ -216,23 +86,23 @@ test('real map loads without runtime errors; gallery loads on demand and wraps',
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('#photo-count')).toHaveText('2 / 4');
   await expect.poll(() => photos.has('demo-home.svg')).toBe(true);
-  await page.locator('#reset-map').focus();
+  await page.locator('.mapboxgl-canvas').focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.locator('#photo-count')).toHaveText('2 / 4');
   await page.locator('#viewer').focus();
   await page.keyboard.press('Escape');
   await expect(page.locator('#viewer')).toBeHidden();
-  await expect(page.locator('#person-picker')).toBeFocused();
-  await page.selectOption('#person-picker', 'demo-b');
+  await expect.poll(() => page.evaluate(() => document.activeElement?.matches('.map-photo-button, .mapboxgl-canvas'))).toBe(true);
+  await selectProfile(page, 'demo-b');
   await expect(page.locator('#carousel-controls')).toBeHidden();
-  await page.selectOption('#person-picker', 'demo-c');
+  await selectProfile(page, 'demo-c');
   await expect(page.locator('#person-description')).toBeHidden();
   await expect(page.locator('#photo-caption-block')).toBeHidden();
-  await page.selectOption('#person-picker', 'demo-d');
+  await selectProfile(page, 'demo-d');
   await expect(page.locator('#photo-message')).toHaveText('No photographs available for this profile.');
-  await page.selectOption('#person-picker', 'demo-a');
+  await selectProfile(page, 'demo-a');
   await expect(page.locator('#photo-count')).toHaveText('1 / 4');
-  await page.getByRole('button', { name: 'Reset view' }).click();
+  await page.getByRole('button', { name: 'Close person details' }).click();
   await expect(page.locator('#viewer')).toBeHidden();
   await expect(page.locator('.mapboxgl-canvas')).toHaveCount(1);
   expect(errors).toEqual([]);
@@ -245,10 +115,10 @@ test('current image must finish before preloading; stale selection cannot overwr
   page.on('request', (request) => { if (request.url().includes('/photos/')) requests.push(request.url()); });
   await page.route('**/photos/demo-portrait.svg', async (route) => { await delayed; await route.continue(); });
   await openMap(page);
-  await page.selectOption('#person-picker', 'demo-a');
+  await selectProfile(page, 'demo-a');
   await expect(page.locator('#photo-frame')).toHaveAttribute('aria-busy', 'true');
   expect(requests).toHaveLength(1);
-  await page.selectOption('#person-picker', 'demo-b');
+  await selectProfile(page, 'demo-b');
   await expect(page.locator('#photo-frame img')).toBeVisible();
   release();
   await expect(page.locator('#photo-frame img')).toHaveAttribute('src', './photos/demo-home.svg');
@@ -259,19 +129,18 @@ test('current image must finish before preloading; stale selection cannot overwr
 test('failed photo retains caption and allows navigation', async ({ page }) => {
   await page.route('**/photos/demo-portrait.svg', (route) => route.fulfill({ status: 404 }));
   await openMap(page);
-  await page.selectOption('#person-picker', 'demo-a');
+  await selectProfile(page, 'demo-a');
   await expect(page.locator('#photo-message')).toContainText('could not be loaded');
   await expect(page.locator('#photo-caption')).toContainText('Demo portrait');
   await page.getByRole('button', { name: 'Next photograph' }).click();
   await expect(page.locator('#photo-frame img')).toBeVisible();
 });
 
-test('failed pipeline keeps profiles usable', async ({ page }) => {
+test('failed pipeline shows a readable error without stale menu instructions', async ({ page }) => {
   await page.route('**/data/pipeline.geojson', (route) => route.fulfill({ status: 503 }));
   await page.goto('/');
   await expect(page.locator('#map-status')).toContainText('pipeline route could not be loaded');
-  await page.selectOption('#person-picker', 'demo-b');
-  await expect(page.locator('#photo-frame img')).toBeVisible();
+  await expect(page.locator('#map-status')).not.toContainText('menu');
 });
 
 test('empty people and unmatched profile ids have readable fallbacks', async ({ page }) => {
@@ -283,13 +152,13 @@ test('empty people and unmatched profile ids have readable fallbacks', async ({ 
   }));
   await page.route('**/data/people.geojson', (route) => route.fulfill({ json: empty }));
   await openMap(page);
-  await expect(page.locator('#person-picker')).toBeDisabled();
+  await expect(page.locator('.explore-controls')).toHaveCount(0);
   await expect(page.locator('#map-status')).toContainText('No person profiles');
   await page.unroute('**/data/people.geojson');
   await page.route('**/data/people.geojson', (route) => route.fulfill({ json: locations }));
   await page.reload();
-  await expect(page.locator('#reset-map')).toBeEnabled();
-  await page.selectOption('#person-picker', 'demo-a');
+  await expect.poll(() => page.evaluate(() => Boolean(window.__testMap?.getLayer('people-hit-area')))).toBe(true);
+  await selectProfile(page, 'demo-a');
   await expect(page.locator('#person-name')).toHaveText('Profile unavailable');
 });
 
@@ -301,138 +170,197 @@ test('missing token and production assets work inside a subdirectory iframe', as
   const frame = page.frameLocator('iframe');
   await expect(frame.locator('#map-status')).toContainText('no Mapbox token');
   await expect(frame.locator('#demo-badge')).toBeHidden();
-  await expect(frame.locator('#person-picker option')).toHaveCount(9);
-  expect([...publishedLocations.features.map((feature) => feature.properties.id), ...counties.features.map((feature) => feature.properties.id).filter(Boolean), 'fort-peck-tribes'].sort()).toEqual(people.map((person) => person.id).sort());
-  for (const person of people) {
-    await frame.locator('#person-picker').selectOption(person.id);
-    await expect(frame.locator('#person-name')).toHaveText(person.name);
-    await expect(frame.locator('#person-location')).toHaveText(person.location);
-    await expect(frame.locator('#photo-message')).toHaveText('No photographs available for this profile.');
-    await expect(frame.locator('#carousel-controls')).toBeHidden();
-  }
+  await expect(frame.locator('.explore-controls, #person-picker, #reset-map')).toHaveCount(0);
   expect(failed).toEqual([]);
 });
 
-test('embed preview caps desktop and mobile widths and shrinks to a phone', async ({ page }) => {
-  await page.goto('http://127.0.0.1:4176/pipeline/embed.html');
-  for (const [viewport, width, height] of [[1440, 1200, 800], [680, 660, 760], [390, 390, 760]]) {
-    await page.setViewportSize({ width: viewport, height: 900 });
-    await expect.poll(() => page.locator('iframe').evaluate((el) => ({ width: el.clientWidth, height: el.clientHeight }))).toEqual({ width, height });
-    await expect(page.frameLocator('iframe').locator('#intro-panel h2')).toHaveText('Along the route');
-  }
+
+test('only the requested places are labeled; areas are labeled interactive buttons', async ({ page }) => {
+  await openMap(page);
+  await expect(page.locator('.map-legend')).toHaveText('Pipeline');
+  expect(await page.evaluate(() => window.__testMap.getLayoutProperty('settlement-label', 'visibility'))).toBe('none');
+  expect(await page.evaluate(() => window.__testMap.getLayoutProperty('state-label', 'visibility'))).toBe('none');
+  const filter = await page.evaluate(() => window.__testMap.getFilter('city-labels'));
+  expect(filter[2]).toEqual(CITY_LABELS);
+  await expect.poll(() => page.evaluate(() => [...new Set(window.__testMap.queryRenderedFeatures({ layers: ['city-labels'] }).map(f => f.properties.name))])).toEqual(['Glasgow']);
+  await expect(page.locator('.county-button[data-profile-id="valley-county-commission"] > span').first()).toHaveText('Valley\nCounty');
+  await expect(page.locator('.county-button[data-profile-id="carter-county-commission"] > span').first()).toHaveText('Carter\nCounty');
+  await expect(page.locator('.reservation-button')).toContainText('Fort Peck Indian\nReservation');
+  await expect(page.locator('.viewer-header .eyebrow')).toHaveCount(0);
 });
 
-for (const [width, height] of [[1200, 800], [660, 760], [320, 640], [375, 667], [390, 844], [768, 700], [900, 650], [1440, 900], [390, 480], [900, 400]]) {
-  test(`panel fits a ${width}×${height} iframe viewport`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ width, height });
-    await openMap(page);
-    await page.selectOption('#person-picker', 'demo-a');
-    await expect(page.locator('#photo-frame img')).toBeVisible();
-    const sizing = await page.evaluate(() => {
-      const panel = document.querySelector('#viewer').getBoundingClientRect();
-      const stage = document.querySelector('.map-viewport').getBoundingClientRect();
-      const close = document.querySelector('#close-viewer').getBoundingClientRect();
-      return {
-        overflow: document.documentElement.scrollWidth > innerWidth || (innerWidth >= 700 && document.documentElement.scrollHeight > innerHeight),
-        fits: panel.left >= 0 && panel.right <= innerWidth && (innerWidth < 700 ? panel.top >= stage.bottom : panel.top >= stage.top && panel.bottom <= stage.bottom),
-        naturalFlow: getComputedStyle(document.querySelector('.viewer-content')).overflowY === 'visible',
-        mapAbove: panel.top - stage.top,
-        mapHeight: stage.height,
-        touchTarget: close.width >= 44 && close.height >= 44,
-        closeUnobscured: document.elementFromPoint(close.x + close.width / 2, close.y + close.height / 2)?.closest('#close-viewer') !== null,
-      };
-    });
-    expect(sizing.overflow).toBe(false);
-    expect(sizing.fits).toBe(true);
-    expect(sizing.touchTarget).toBe(true);
-    expect(sizing.closeUnobscured).toBe(true);
-    if (width < 700) {
-      expect(sizing.mapAbove).toBeGreaterThanOrEqual(sizing.mapHeight);
-      expect(sizing.naturalFlow).toBe(true);
-    }
-    if (width < 700) {
-      // The complete route remains in the map above the separate mobile profile.
-      const routeVisible = await page.evaluate((coordinates) => {
-        const stage = document.querySelector('.map-viewport').getBoundingClientRect();
-        const card = document.querySelector('#viewer').getBoundingClientRect();
-        return coordinates.every((coordinate) => {
-          const point = window.__testMap.project(coordinate);
-          return point.y >= 0 && point.y < card.top - stage.top && point.x >= 0 && point.x <= stage.width;
-        });
-      }, routeCoordinates);
-      expect(routeVisible).toBe(true);
-    }
-    await page.getByRole('button', { name: 'Next photograph' }).click();
-    await expect(page.locator('#photo-count')).toHaveText('2 / 4');
-    await expect(page.locator('#photo-frame img')).toBeVisible();
-    await page.screenshot({ path: testInfo.outputPath(`viewport-${width}-${height}.png`) });
-  });
-}
-
 for (const width of [1200, 390]) {
-  test(`county boundaries replace commission dots and open profiles at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 844 });
+  test(`every point and area consistently focuses its geometry at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 });
     await page.unroute('**/src/people.js');
     await page.unroute('**/data/people.geojson');
     await openMap(page);
-    await expect(page.locator('.story-header, .story-footer')).toHaveCount(0);
-    expect(await page.evaluate(() => window.__testMap.getSource('counties')._data.features.map((f) => f.properties.name).sort()))
-      .toEqual(['Carter County', 'Daniels County', 'Valley County']);
-    for (const [id, coordinates] of Object.entries(countyCoordinates)) {
-      const point = await page.evaluate((coordinates) => {
-        const p = window.__testMap.project(coordinates);
-        return { x: p.x, y: p.y };
-      }, coordinates);
-      await page.locator('.mapboxgl-canvas').click({ position: point });
-      await expect(page.locator('#person-name')).toHaveText(people.find((person) => person.id === id).name);
-      await expect.poll(() => page.evaluate(() => [...new Set(window.__testMap.queryRenderedFeatures({ layers: ['county-selected'] }).map((f) => f.properties.id))])).toEqual([id]);
-      expect(await page.evaluate(() => window.__testMap.getSource('people')._data.features.some((f) => f.properties.id.endsWith('-county-commission')))).toBe(false);
-      await page.getByRole('button', { name: 'Reset view' }).click();
+    const original = await page.evaluate(() => ({ zoom: window.__testMap.getZoom(), center: window.__testMap.getCenter().toArray() }));
+    for (const person of people) {
+      await selectProfile(page, person.id);
+      await expect(page.locator('#person-name')).toHaveText(person.name);
+      const point = publishedLocations.features.find(f => f.properties.id === person.id);
+      if (point) {
+        await expect.poll(() => page.evaluate(() => window.__testMap.getZoom())).toBeCloseTo(MAP_STYLE.pointZoom, 5);
+      } else {
+        const source = person.id === 'fort-peck-tribes' ? 'reservation' : 'counties';
+        await expect.poll(() => page.evaluate(({ id, source }) => {
+          const map = window.__testMap;
+          const stage = document.querySelector('.map-viewport');
+          const features = map.getSource(source)._data.features.filter(f => f.properties.id === id);
+          return features.every(({ geometry }) => {
+            const coords = geometry.type === 'Polygon' ? geometry.coordinates.flat() : geometry.coordinates.flat(2);
+            return coords.every(coordinate => {
+              const p = map.project(coordinate);
+              return p.x >= 0 && p.x <= stage.clientWidth && p.y >= 0 && p.y <= stage.clientHeight;
+            });
+          });
+        }, { id: person.id, source })).toBe(true);
+        expect(await page.evaluate(() => window.__testMap.getZoom())).toBeGreaterThan(original.zoom);
+      }
+      await page.getByRole('button', { name: 'Close person details' }).click();
+      await expect.poll(() => page.evaluate(() => window.__testMap.getZoom())).toBeCloseTo(original.zoom, 5);
+      await expect(page.locator('#viewer')).toBeHidden();
     }
-    const point = await page.evaluate(() => {
-      const p = window.__testMap.project([-105.3, 48.8]);
-      return { x: p.x, y: p.y };
-    });
-    await page.locator('.mapboxgl-canvas').click({ position: point });
-    await expect(page.locator('#viewer')).toBeHidden();
   });
 }
 
-test('unavailable counties retain commission profiles in the menu', async ({ page }) => {
+for (const [width, height] of [[1200, 700], [1024, 768], [820, 1180], [768, 1024], [660, 760], [320, 568], [375, 667], [390, 844], [390, 480], [320, 460], [900, 400]]) {
+  test(`map and photo panel fit together at ${width}×${height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height });
+    // Exercise the wrapped header with a real, long profile name and gallery photos.
+    await page.route('**/src/people.js', (route) => route.fulfill({
+      contentType: 'text/javascript',
+      body: galleryProfiles.replace('Demo person A', 'Tammi and Curtis Fladager'),
+    }));
+    await openMap(page);
+    await page.screenshot({ path: testInfo.outputPath('overview.png') });
+    await selectProfile(page, 'demo-a');
+    await expect(page.locator('#photo-frame img')).toBeVisible();
+    const sizes = await page.evaluate(() => {
+      const app = document.querySelector('#app').getBoundingClientRect();
+      const map = document.querySelector('.map-viewport').getBoundingClientRect();
+      const panel = document.querySelector('.profile-panel').getBoundingClientRect();
+      const image = document.querySelector('#photo-frame').getBoundingClientRect();
+      const next = document.querySelector('#next-photo').getBoundingClientRect();
+      const close = document.querySelector('#close-viewer').getBoundingClientRect();
+      return {
+        appWidth: app.width, appHeight: app.height, mapHeight: map.height,
+        noPageScroll: document.documentElement.scrollHeight <= innerHeight && document.documentElement.scrollWidth <= innerWidth,
+        panelFits: panel.bottom <= app.bottom + 1 && panel.left >= 0 && panel.right <= app.right,
+        stacked: panel.top >= map.bottom,
+        zoomClear: document.querySelector('.mapboxgl-ctrl-group').getBoundingClientRect().left >= panel.right,
+        zoomPosition: (() => {
+          const zoom = document.querySelector('.mapboxgl-ctrl-group').getBoundingClientRect();
+          return innerWidth >= 900
+            ? zoom.right > map.right - 30 && zoom.top < map.top + 30
+            : zoom.left < map.left + 30 && zoom.bottom <= map.bottom && zoom.bottom > map.bottom - 60;
+        })(),
+        imageVisible: image.top >= panel.top && image.bottom <= panel.bottom,
+        controlsVisible: [close, next].every(r => document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('button')),
+      };
+    });
+    expect(sizes.appWidth).toBeLessThanOrEqual(1200);
+    expect(sizes.appHeight).toBeLessThanOrEqual(700);
+    expect(sizes.noPageScroll).toBe(true);
+    expect(sizes.panelFits).toBe(true);
+    expect(sizes.zoomPosition).toBe(true);
+    expect(sizes.mapHeight).toBeGreaterThan(150);
+    if (width >= 900) expect(sizes.zoomClear).toBe(true);
+    if (width < 900) {
+      expect(sizes.stacked).toBe(true);
+      expect(sizes.imageVisible).toBe(true);
+      expect(sizes.controlsVisible).toBe(true);
+    }
+    await page.getByRole('button', { name: 'Next photograph' }).click();
+    await expect(page.locator('#photo-count')).toHaveText('2 / 4');
+    await page.screenshot({ path: testInfo.outputPath('selected.png') });
+  });
+}
+
+test.describe('touch input', () => {
+  test.use({ hasTouch: true, isMobile: true });
+
+test('nearby profiles have separate large choices and work with touch and keyboard', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 700 });
   await page.unroute('**/src/people.js');
   await page.unroute('**/data/people.geojson');
-  await page.route('**/data/counties.geojson', (route) => route.fulfill({ status: 503 }));
   await openMap(page);
-  await expect(page.locator('#map-status')).toContainText('County boundaries could not be loaded');
-  for (const id of Object.keys(countyCoordinates)) {
-    await page.selectOption('#person-picker', id);
-    await expect(page.locator('#person-name')).toHaveText(people.find((person) => person.id === id).name);
+  const group = page.locator('.map-photo-button[data-profile-ids*="kleeman"][data-profile-ids*="fladager"]');
+  await expect(group).toBeVisible();
+  const size = await group.boundingBox();
+  expect(size.width).toBeGreaterThanOrEqual(44);
+  expect(size.height).toBeGreaterThanOrEqual(44);
+  await group.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog', { name: 'Choose a profile' })).toBeVisible();
+  for (const id of ['kleeman', 'fladager']) {
+    const choice = page.locator(`.profile-choice[data-profile-id="${id}"]`);
+    await expect(choice).toBeVisible();
+    expect((await choice.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  }
+  await page.screenshot({ path: testInfo.outputPath('nearby-profiles.png') });
+  await page.keyboard.press('Escape');
+  await expect(group).toBeFocused();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await group.tap();
+  await page.locator('.profile-choice[data-profile-id="fladager"]').tap();
+  await expect(page.locator('#person-name')).toHaveText('Tammi and Curtis Fladager');
+  for (const id of ['kleeman', 'fladager']) {
+    await selectProfile(page, id);
+    await expect(page.locator('#person-name')).toHaveText(people.find(person => person.id === id).name);
   }
 });
 
-test('open profile moves with its shared panel when the embed is resized', async ({ page }, testInfo) => {
+});
+
+test('resizing an open profile keeps a single map and stays inside the viewport', async ({ page }) => {
   await openMap(page);
-  await page.selectOption('#person-picker', 'demo-a');
-  await expect(page.locator('#photo-frame img')).toBeVisible();
-  for (const width of [1200, 390, 1200]) {
-    await page.setViewportSize({ width, height: 800 });
+  await selectProfile(page, 'demo-a');
+  for (const [width, height] of [[390, 700], [768, 1024], [1024, 768], [1200, 700]]) {
+    await page.setViewportSize({ width, height });
     await expect.poll(() => page.evaluate(() => {
-      const map = document.querySelector('.map-viewport').getBoundingClientRect();
-      const panel = document.querySelector('.profile-panel').getBoundingClientRect();
-      return innerWidth < 700 ? panel.top >= map.bottom : panel.left < map.left + 32 && panel.bottom <= map.bottom;
+      const panel = document.querySelector('#viewer').getBoundingClientRect();
+      return panel.bottom <= innerHeight && panel.right <= innerWidth;
     })).toBe(true);
     await expect(page.locator('#person-name')).toHaveText('Demo person A');
     await expect(page.locator('.mapboxgl-canvas')).toHaveCount(1);
-    if (width < 700) {
-      await expect.poll(() => page.evaluate((coordinates) => {
-        const map = window.__testMap;
-        const stage = document.querySelector('.map-viewport');
-        return coordinates.every((coordinate) => {
-          const point = map.project(coordinate);
-          return point.x >= 0 && point.x <= stage.clientWidth && point.y >= 0 && point.y <= stage.clientHeight;
-        });
-      }, routeCoordinates)).toBe(true);
-    }
-    await page.screenshot({ path: testInfo.outputPath(`shared-panel-${width}.png`), fullPage: true });
+    await expect.poll(() => page.evaluate(() => window.__testMap.getZoom())).toBeCloseTo(MAP_STYLE.pointZoom, 5);
   }
 });
+
+test('embed preview scales within the parent viewport and desktop maximum', async ({ page }) => {
+  await page.goto('http://127.0.0.1:4176/pipeline/embed.html');
+  for (const [width, height] of [[1440, 900], [1024, 768], [768, 1024], [390, 844], [320, 568]]) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => page.locator('iframe').evaluate(el => el.clientWidth)).toBe(Math.min(width, 1200));
+    expect(await page.locator('iframe').evaluate(el => el.clientHeight)).toBeLessThanOrEqual(Math.min(height, 700));
+  }
+});
+
+for (const width of [320, 390, 768, 1200]) {
+  test(`map buttons have unobscured touch targets at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 700 });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    await openMap(page);
+    const targets = await page.locator('.map-buttons button:not([hidden])').evaluateAll(buttons => buttons.map(button => {
+      const rect = button.getBoundingClientRect();
+      return {
+        id: button.getAttribute('aria-label'), left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
+        width: rect.width, height: rect.height,
+        clear: document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.closest('button') === button,
+      };
+    }));
+    for (const target of targets) {
+      expect(target.width, target.id).toBeGreaterThanOrEqual(44);
+      expect(target.height, target.id).toBeGreaterThanOrEqual(44);
+      expect(target.clear, target.id).toBe(true);
+      for (const other of targets.filter(item => item !== target)) {
+        expect(target.left < other.right && target.right > other.left && target.top < other.bottom && target.bottom > other.top,
+          `${target.id} overlaps ${other.id}`).toBe(false);
+      }
+    }
+    await page.screenshot({ path: testInfo.outputPath('published-overview.png') });
+  });
+}

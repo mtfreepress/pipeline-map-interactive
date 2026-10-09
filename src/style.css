@@ -9,9 +9,9 @@
   --point: #253c3b;
   --selected: #ce5a00;
   --focus: #006b87;
-  --panel-width: clamp(350px, 35vw, 420px);
-  --panel-body-size: 24px;
-  --panel-caption-size: 22px;
+  --panel-width: clamp(320px, 34vw, 400px);
+  --panel-body-size: 22px;
+  --panel-caption-size: 20px;
   --panel-meta-size: 18px;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--text);
@@ -21,58 +21,49 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #app { width: 100%; height: 100%; margin: 0; }
+html, body { width: 100%; margin: 0; }
+#app { width: 100%; height: min(700px, 100svh, 58.333vw); }
 body { overflow: hidden; }
 #app { max-width: 1200px; margin-inline: auto; display: flex; flex-direction: column; overflow: hidden; }
 [hidden] { display: none !important; }
-button, select { font: inherit; color: inherit; }
-button, select { min-height: 44px; border: 1px solid var(--border); background: var(--panel-bg); border-radius: 3px; }
+button { font: inherit; color: inherit; }
+button { min-height: 44px; border: 1px solid var(--border); background: var(--panel-bg); border-radius: 3px; }
 button { cursor: pointer; }
 button:hover:not(:disabled) { background: #eeeee7; }
-button:disabled, select:disabled { cursor: default; opacity: 0.55; }
+button:disabled { cursor: default; opacity: 0.55; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .viewer:focus-visible { outline-offset: -3px; }
 p, h1, h2, figure { margin: 0; }
 
 .eyebrow { font-size: 16px; letter-spacing: 0.1em; line-height: 1.4; font-weight: 700; text-transform: uppercase; }
-.explore-controls { flex: none; min-width: 0; padding: 16px 18px; border-top: 1px solid var(--border); }
-.explore-controls label { display: block; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.control-row { display: flex; gap: 8px; }
-select { padding: 0 28px 0 10px; width: 100%; min-width: 0; font-size: 18px; }
-.route-button { flex: none; font-size: 18px; padding: 0 12px; font-weight: 700; }
-
 .map-stage { flex: 1; position: relative; min-height: 0; overflow: hidden; isolation: isolate; }
 .map-viewport { position: absolute; inset: 0; overflow: hidden; }
 #map { position: absolute; inset: 0; z-index: 0; background-color: #e6e9e1; background-image: linear-gradient(#dce0d650 1px, transparent 1px), linear-gradient(90deg, #dce0d650 1px, transparent 1px); background-size: 36px 36px; }
 .map-legend { position: absolute; top: 16px; left: 16px; display: flex; gap: 18px; padding: 10px 12px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 3px; font-size: 18px; pointer-events: none; }
 .map-legend span { display: flex; align-items: center; gap: 8px; }
 .route-key { width: 25px; border-top: 4px solid var(--route); }
-.person-key { width: 12px; height: 12px; border: 2px solid var(--point); background: #fff; border-radius: 50%; }
-.county-key { width: 25px; border-top: 2px solid #7d8984; }
-.reservation-key { width: 25px; border-top: 5px double #e6ab02; }
 .map-status { position: absolute; z-index: 2; top: 72px; left: 16px; max-width: min(420px, calc(100% - 90px)); max-height: 30%; overflow: auto; padding: 15px 17px; border: 1px solid var(--border); border-left: 3px solid var(--route); background: var(--panel-bg); font-size: 17px; line-height: 1.55; }
 .map-status p + p { margin-top: 10px; }
-/* One shared anchor for directions, profile content and keyboard controls. */
-.profile-panel { position: absolute; bottom: 40px; left: 20px; width: var(--panel-width); max-height: calc(100% - 112px); display: flex; flex-direction: column; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 3px 15px #1424220c; overflow: hidden; }
+/* One shared anchor for directions and profile content. */
+.profile-panel { position: absolute; bottom: 40px; left: 20px; width: var(--panel-width); max-height: calc(100% - 170px); display: flex; flex-direction: column; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 3px 15px #1424220c; overflow: hidden; }
 .intro-panel { padding: 20px; overflow: auto; }
 .viewer { min-height: 0; }
 .section-number { color: var(--route); font-size: 17px; font-weight: 700; letter-spacing: 0.12em; }
-.intro-panel h2 { margin: 8px 0; font: 500 36px/1.15 Georgia, 'Times New Roman', serif; letter-spacing: -0.025em; }
+.intro-panel h2 { margin: 8px 0; font: 500 32px/1.15 Georgia, 'Times New Roman', serif; letter-spacing: -0.025em; }
 .intro-panel p { color: var(--muted); font-size: var(--panel-body-size); line-height: 1.5; }
 .intro-panel .intro-note { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); font-size: var(--panel-meta-size); }
 .viewer { display: flex; flex-direction: column; }
 .viewer-header { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 18px 16px 16px 20px; border-bottom: 1px solid var(--border); }
 .viewer-header > div { min-width: 0; }
-.viewer-header .eyebrow { color: var(--route); margin-bottom: 7px; font-size: 17px; }
-.viewer h2 { font: 500 36px/1.15 Georgia, 'Times New Roman', serif; letter-spacing: -0.025em; overflow-wrap: anywhere; }
+.viewer h2 { font: 500 32px/1.15 Georgia, 'Times New Roman', serif; letter-spacing: -0.025em; overflow-wrap: anywhere; }
 .person-location { color: var(--muted); font-size: var(--panel-meta-size); line-height: 1.5; margin-top: 5px; }
 .viewer-content { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .icon-button { width: 44px; height: 44px; flex: none; display: grid; place-content: center; font-size: 23px; line-height: 1; }
 .close-button { font-size: 27px; background: transparent; }
-.photo-frame { display: grid; place-items: center; position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 32dvh; background: #ebece5; overflow: hidden; }
+.photo-frame { display: grid; place-items: center; position: relative; width: 100%; height: min(190px, 27svh); background: #ebece5; overflow: hidden; }
 .photo-frame img { display: block; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: contain; }
 .photo-message { padding: 24px; font-size: var(--panel-caption-size); line-height: 1.6; text-align: center; color: var(--muted); }
-.carousel-controls { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+.carousel-controls { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; border-bottom: 1px solid var(--border); }
 #photo-count { font-size: var(--panel-meta-size); font-variant-numeric: tabular-nums; letter-spacing: 0.08em; }
 figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-height: 1.6; }
 .photo-credit { font-size: var(--panel-meta-size); color: var(--muted); margin-top: 5px; }
@@ -82,44 +73,38 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
 .noscript { position: absolute; inset: 35% 10% auto; z-index: 5; background: var(--panel-bg); padding: 20px; }
 
 /* Keep Mapbox's controls and attribution outside the photo panel. */
-.mapboxgl-ctrl-top-right { top: 64px; right: 6px; }
-.mapboxgl-ctrl-group { box-shadow: none !important; border: 1px solid var(--border); }
+.mapboxgl-ctrl-top-right { top: 6px; right: 6px; }
+.mapboxgl-ctrl-group { display: flex; box-shadow: none !important; border: 1px solid var(--border); }
+.mapboxgl-ctrl-group button + button { border-top: 0; border-left: 1px solid var(--border); }
 .mapboxgl-ctrl-group button { width: 44px; height: 44px; }
 .mapboxgl-ctrl-attrib { font-size: 12px; }
 
-@media (max-width: 699px) {
-  html, body, #app { height: auto; min-height: 100%; }
-  body { overflow: auto; }
-  #app { overflow: visible; }
-  .map-stage { flex: none; overflow: visible; }
-  .map-viewport { position: relative; height: clamp(400px, 70svh, 560px); }
-  .map-legend { left: 12px; right: 12px; top: 12px; flex-wrap: wrap; gap: 10px 16px; padding: 10px 12px; }
-  .map-legend span { white-space: nowrap; }
-  .mapboxgl-ctrl-top-right { top: auto; bottom: 34px; left: 12px; right: auto; }
-  .mapboxgl-ctrl-group { display: flex; }
-  .mapboxgl-ctrl-group button + button { border-top: 0; border-left: 1px solid var(--border); }
-  .map-status { top: 158px; left: 12px; max-width: calc(100% - 24px); max-height: calc(100% - 200px); }
-  .profile-panel { position: relative; inset: auto; width: 100%; max-height: none; border-radius: 0; box-shadow: none; }
-  .intro-panel { padding: 20px; overflow: visible; }
-  .intro-panel h2 { font-size: 34px; }
-  .intro-panel .intro-note { margin-top: 14px; }
-  .viewer-content { overflow: visible; scrollbar-gutter: auto; }
-  .viewer-header { padding: 18px 14px 16px 20px; }
-  .viewer h2 { font-size: 34px; }
-  .photo-frame { aspect-ratio: 4 / 3; max-height: none; }
-  figcaption { padding: 18px 20px; }
-  .person-description { padding: 18px 20px; }
-}
-
-@media (min-width: 700px) and (max-height: 520px) {
-  .profile-panel { bottom: 32px; max-height: calc(100% - 96px); }
-  .viewer-header { padding: 8px 12px; }
-  .viewer-header .eyebrow { display: none; }
-  .viewer h2 { font-size: 30px; }
-  .intro-panel { padding: 14px; }
-  .intro-panel h2 { font-size: 30px; }
-  .intro-panel .intro-note { margin-top: 10px; }
-  .explore-controls { padding: 10px 14px; }
+/* Compact layout includes portrait tablets; landscape tablets get the wide layout. */
+@media (max-width: 899px) {
+  :root { --panel-body-size: 18px; --panel-caption-size: 17px; --panel-meta-size: 15px; }
+  #app { height: min(700px, 100svh); }
+  .map-stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+  .has-selection .profile-panel { max-height: calc(min(700px, 100svh) - 160px); }
+  .map-viewport { position: relative; inset: auto; min-height: 0; }
+  .map-legend { left: 12px; top: 12px; padding: 8px 10px; font-size: 16px; }
+  .mapboxgl-ctrl-top-right { top: auto; right: auto; bottom: 26px; left: 2px; }
+  .map-status { top: 66px; left: 12px; max-width: calc(100% - 24px); max-height: calc(100% - 100px); }
+  .profile-panel { position: relative; inset: auto; width: 100%; min-height: 0; max-height: none; border-radius: 0; box-shadow: none; }
+  .intro-panel { padding: 12px 16px; }
+  .intro-panel .section-number, .intro-panel .intro-note { display: none; }
+  .intro-panel h2 { font-size: 22px; margin: 0 0 4px; }
+  .intro-panel p { font-size: 16px; line-height: 1.4; }
+  .viewer { --photo-height: clamp(80px, 20svh, 148px); }
+  .viewer-header { padding: 8px 12px; align-items: center; gap: 6px; }
+  .viewer h2 { font-size: 23px; line-height: 1.15; }
+  .person-location { margin-top: 3px; line-height: 1.3; }
+  /* Reserve photo, controls, and a caption preview; let the map use the rest. */
+  .viewer-content { height: calc(var(--photo-height) + 112px); scrollbar-gutter: auto; }
+  .photo-frame { height: var(--photo-height); }
+  .photo-message { padding: 12px; }
+  .carousel-controls { padding: 3px 12px; }
+  figcaption { padding: 10px 14px; }
+  .person-description { padding: 12px 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -129,3 +114,26 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
 .map-tooltip { position: absolute; z-index: 3; max-width: min(300px, calc(100% - 24px)); padding: 12px 16px; border: 1px solid var(--point); border-radius: 4px; background: var(--panel-bg); box-shadow: 0 3px 14px #14242226; pointer-events: none; font-size: 18px; line-height: 1.35; }
 .map-tooltip strong, .map-tooltip span { display: block; }
 .map-tooltip span { margin-top: 4px; color: var(--muted); font-size: 16px; }
+
+/* Raised photo buttons and labeled area buttons are the interactive map key. */
+.map-buttons { position: absolute; inset: 0; pointer-events: none; }
+.map-photo-button, .map-area-button { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; border: 2px solid var(--point); background: #fffefa; color: var(--point); box-shadow: 0 2px 5px #122b3140; }
+.map-photo-button { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; padding: 0; z-index: 2; }
+.map-photo-button:hover, .map-photo-button[aria-pressed="true"], .map-area-button:hover, .map-area-button[aria-pressed="true"] { background: #d7d9d6; color: #242e2e; }
+.photo-icon { width: 23px; height: 17px; border: 2px solid currentColor; border-radius: 3px; position: relative; }
+.photo-icon::before { content: ''; position: absolute; width: 8px; height: 8px; border: 2px solid currentColor; border-radius: 50%; left: 5px; top: 2px; }
+.photo-icon::after { content: ''; position: absolute; width: 9px; height: 4px; background: currentColor; border-radius: 2px 2px 0 0; top: -5px; left: 5px; }
+.marker-count { position: absolute; top: -6px; right: -6px; min-width: 22px; height: 22px; padding: 2px 4px; border-radius: 50%; background: var(--point); color: #fff; border: 1px solid #fff; font: 700 14px/17px Arial, sans-serif; }
+.map-area-button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 5px 8px; border-radius: 7px; font: 600 18px/1.1 Arial, sans-serif; white-space: pre; width: max-content; text-align: center; z-index: 1; }
+.area-photo-icon { flex: none; transform: scale(0.78); margin-inline: -2px; }
+.reservation-button { border-color: #9e7900; font-size: 16px; }
+.profile-chooser { position: absolute; z-index: 5; width: min(300px, calc(100% - 16px)); max-height: calc(100% - 16px); overflow: auto; background: var(--panel-bg); border: 1px solid var(--point); border-radius: 8px; box-shadow: 0 4px 20px #14242240; padding: 4px 10px 10px; }
+.chooser-header { display: flex; align-items: center; justify-content: space-between; font-size: 17px; gap: 8px; }
+.chooser-header .icon-button { border: 0; }
+.profile-choice { display: block; width: 100%; text-align: left; min-height: 48px; margin-top: 6px; padding: 8px 28px 8px 10px; font-size: 17px; line-height: 1.25; position: relative; }
+.profile-choice::after { content: '›'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 24px; }
+@media (max-width: 899px) {
+  .map-area-button { font-size: 16px; padding: 4px 6px; gap: 4px; }
+  .reservation-button { font-size: 14px; }
+}
+.map-button-leaders { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; stroke: var(--point); stroke-width: 1.5; }

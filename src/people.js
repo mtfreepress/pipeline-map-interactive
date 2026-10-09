@@ -31,7 +31,7 @@ export const people = [
   {
     id: 'jerry-arnold',
     name: 'Jerry Arnold',
-    location: 'Heckner Road, Opheim, MT',
+    location: 'Opheim, MT',
     photos: [],
   },
   {

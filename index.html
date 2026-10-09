@@ -11,12 +11,9 @@
     <main id="app" aria-label="Along the route">
       <section class="map-stage" aria-label="Pipeline route and people">
         <div class="map-viewport">
-          <div id="map" aria-label="Interactive map. Use the Explore a profile menu to select a profile with the keyboard."></div>
+          <div id="map" aria-label="Interactive pipeline map. Select a point or highlighted area to explore a profile."></div>
           <div class="map-legend" aria-label="Map legend">
             <span><i class="route-key" aria-hidden="true"></i>Pipeline</span>
-            <span><i class="person-key" aria-hidden="true"></i>Person</span>
-            <span><i class="county-key" aria-hidden="true"></i>Counties</span>
-            <span><i class="reservation-key" aria-hidden="true"></i>Fort Peck</span>
           </div>
           <div id="map-status" class="map-status" role="status" aria-live="polite"></div>
 
@@ -33,7 +30,6 @@
           <section id="viewer" class="viewer" aria-labelledby="person-name" tabindex="-1" hidden>
             <header class="viewer-header">
               <div>
-                <p class="eyebrow">Along the route</p>
                 <h2 id="person-name"></h2>
                 <p id="person-location" class="person-location"></p>
               </div>
@@ -59,15 +55,7 @@
               <p id="person-description" class="person-description"></p>
             </div>
           </section>
-          <div class="explore-controls">
-            <label for="person-picker">Explore a profile</label>
-            <div class="control-row">
-              <select id="person-picker" aria-controls="viewer" disabled>
-                <option value="">Choose a profile…</option>
-              </select>
-              <button id="reset-map" class="route-button" type="button" disabled>Reset view</button>
-            </div>
-          </div>
+
         </div>
       </section>
 

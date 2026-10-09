@@ -1,16 +1,32 @@
 import mapboxgl from 'mapbox-gl';
+import { createMapButtons } from './map-buttons.js';
+
+export const COMPACT_QUERY = '(max-width: 899px)';
+export const CITY_LABELS = ['Billings', 'Miles City', 'Glasgow', 'Wolf Point', 'Great Falls', 'Bozeman', 'Helena', 'Kalispell'];
+const AREA_LABELS = [
+  { id: 'valley-county-commission', name: 'Valley\nCounty', coordinates: [-107.05, 48.4] },
+  { id: 'carter-county-commission', name: 'Carter\nCounty', coordinates: [-104.5, 45.4] },
+  { id: 'fort-peck-tribes', name: 'Fort Peck Indian\nReservation', coordinates: [-105.45, 48.35] },
+];
 
 // Opening/reset view: [[west, south], [east, north]], in longitude/latitude.
 // null fits the pipeline instead. Selection padding clears the southwest profile panel.
 export const MAP_VIEW = {
-  desktopBounds: [[-116.1, 44.3], [-103.95, 49.1]],
+  desktopBounds: [[-116.05, 44.36], [-104.04, 49.0]],
   mobileBounds: null,
-  desktopPadding: { top: 66, left: 48, bottom: 60, panelGap: 48 },
+  desktopPadding: { top: 32, left: 32, bottom: 32, panelGap: 48 },
 };
 
 // Basemap, water appearance, line widths and point sizes live here.
 export const MAP_STYLE = {
   basemap: 'mapbox://styles/mapbox/light-v11',
+  labels: {
+    font: ['Open Sans Regular', 'Arial Unicode MS Regular'],
+    size: 20,
+    color: '#495650',
+    haloColor: '#fffefa',
+    haloWidth: 1.5,
+  },
   water: {
     fillColor: '#acd3e5',
     lineColor: '#6ba4c1',
@@ -29,8 +45,50 @@ export const MAP_STYLE = {
   reservationColor: '#e6ab02',
   reservationWidth: 1.5,
   reservationGap: 0,
-  duration: 350,
+  pointZoom: 9.5,
+  duration: 850,
 };
+
+// Gentle acceleration and deceleration, shared by profile and overview moves.
+const cameraEasing = (t) => t * t * (3 - 2 * t);
+
+function labelLayout() {
+  return {
+    'text-font': MAP_STYLE.labels.font,
+    'text-size': MAP_STYLE.labels.size,
+    'text-letter-spacing': 0,
+    'text-transform': 'none',
+  };
+}
+
+function labelPaint() {
+  return {
+    'text-color': MAP_STYLE.labels.color,
+    'text-halo-color': MAP_STYLE.labels.haloColor,
+    'text-halo-width': MAP_STYLE.labels.haloWidth,
+  };
+}
+
+function styleLabels(map) {
+  const layers = map.getStyle().layers;
+  const places = layers.find((layer) => layer.type === 'symbol' && layer.id.includes('settlement'));
+  // Replace the basemap's zoom-dependent place hierarchy with one explicit list.
+  for (const layer of layers) {
+    if (layer.type === 'symbol' && layer.layout?.['text-field']) map.setLayoutProperty(layer.id, 'visibility', 'none');
+  }
+  if (!places) return;
+  map.addLayer({
+    id: 'city-labels', type: 'symbol', source: places.source,
+    ...(places['source-layer'] ? { 'source-layer': places['source-layer'] } : {}),
+    filter: ['match', ['coalesce', ['get', 'name_en'], ['get', 'name']], CITY_LABELS, true, false],
+    layout: {
+      ...labelLayout(), 'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']],
+      'text-variable-anchor': ['top', 'bottom', 'left', 'right', 'top-right', 'top-left', 'bottom-right', 'bottom-left'], 'text-radial-offset': 1,
+      'text-padding': 5,
+    },
+    paint: labelPaint(),
+  });
+}
 
 function styleWater(map) {
   const water = MAP_STYLE.water;
@@ -51,11 +109,11 @@ function styleWater(map) {
   }
 }
 
-export function createRouteMap({ token, pipeline, locations, reservation, counties, profiles, onSelect, onStatus, onReady }) {
+export function createRouteMap({ token, pipeline, locations, reservation, counties, profiles, onSelect, onStatus }) {
   const stage = document.querySelector('.map-viewport');
   const panel = document.querySelector('.profile-panel');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const narrow = matchMedia('(max-width: 699px)');
+  const narrow = matchMedia(COMPACT_QUERY);
   const colors = getComputedStyle(document.documentElement);
   const bounds = new mapboxgl.LngLatBounds();
   for (const feature of pipeline.features) {
@@ -75,6 +133,9 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
   let ready = false;
   let overview = true;
   let hoveredId = null;
+  let mapButtons;
+  let lastSize;
+  const stageSize = () => `${stage.clientWidth}:${stage.clientHeight}`;
   const profileNames = new Map(profiles.map((person) => [person.id, person.name]));
   const tooltip = document.createElement('div');
   tooltip.className = 'map-tooltip';
@@ -91,10 +152,10 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
   }
 
   function padding(forSelection = false) {
-    if (narrow.matches) return { top: 110, left: 24, right: 24, bottom: 36 };
+    if (narrow.matches) return { top: 66, left: 48, right: 48, bottom: 36 };
     const { top, left, bottom, panelGap } = MAP_VIEW.desktopPadding;
     return {
-      top, bottom, right: left,
+      top: forSelection ? Math.max(top, 76) : top, bottom, right: left,
       left: forSelection ? panel.getBoundingClientRect().width + panelGap : left,
     };
   }
@@ -120,19 +181,20 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
   map.touchZoomRotate.disableRotation();
   map.keyboard.disableRotation();
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-  map.getCanvas().setAttribute('aria-label', 'Pipeline map. Use arrow keys to pan and plus or minus to zoom. Select profiles using the Explore a profile menu.');
+  map.getCanvas().setAttribute('aria-label', 'Pipeline map. Use arrow keys to pan and plus or minus to zoom. Select a point or highlighted area to explore a profile.');
 
   const loadTimeout = window.setTimeout(() => {
-    if (!ready) onStatus('The map is taking longer than expected. Check your connection or try reloading. Profiles are still available using the menu.');
+    if (!ready) onStatus('The map is taking longer than expected. Check your connection or try reloading.');
   }, 15000);
   map.on('error', () => {
     // Avoid logging request URLs containing the public token.
-    onStatus('Some map content could not load. Check your connection and Mapbox token settings. You can still explore profiles using the menu.');
+    onStatus('Some map content could not load. Check your connection and Mapbox token settings.');
   });
 
   map.on('load', () => {
     clearTimeout(loadTimeout);
     styleWater(map);
+    styleLabels(map);
     const routeColor = colors.getPropertyValue('--route').trim();
     const pointColor = colors.getPropertyValue('--point').trim();
     const selectedColor = colors.getPropertyValue('--selected').trim();
@@ -144,7 +206,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
     const firstLabel = map.getStyle().layers.find((layer) => layer.type === 'symbol')?.id;
     map.addLayer({
       id: 'county-hit-area', type: 'fill', source: 'counties', filter: ['has', 'id'],
-      paint: { 'fill-opacity': 0 },
+      paint: { 'fill-color': pointColor, 'fill-opacity': 0.045 },
     }, firstLabel);
     map.addLayer({
       id: 'county-outline', type: 'line', source: 'counties',
@@ -162,7 +224,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
     }, firstLabel);
     map.addLayer({
       id: 'reservation-hit-area', type: 'fill', source: 'reservation',
-      paint: { 'fill-opacity': 0 },
+      paint: { 'fill-color': MAP_STYLE.reservationColor, 'fill-opacity': 0.06 },
     }, firstLabel);
     // A transparent gap creates two parallel strokes along the polygon boundary.
     map.addLayer({
@@ -191,7 +253,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
     }, firstLabel);
     map.addLayer({
       id: 'people-points', type: 'circle', source: 'people',
-      paint: { 'circle-radius': MAP_STYLE.pointRadius, 'circle-color': '#ffffff', 'circle-stroke-width': 2.5, 'circle-stroke-color': pointColor },
+      paint: { 'circle-radius': 3, 'circle-color': '#ffffff', 'circle-stroke-width': 1.5, 'circle-stroke-color': pointColor },
     });
     map.addLayer({
       id: 'people-hover', type: 'circle', source: 'people', filter: ['==', ['get', 'id'], ''],
@@ -222,7 +284,8 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
     map.on('click', (event) => {
       const feature = featureAt(event.point);
       clearHover();
-      if (feature) onSelect(feature.properties.id, map.getCanvas());
+      if (feature?.geometry.type === 'Point') mapButtons.openPoint(feature.properties.id);
+      else if (feature) onSelect(feature.properties.id, map.getCanvas());
     });
     map.on('mousemove', (event) => {
       if (map.isMoving()) return;
@@ -245,11 +308,19 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
       tooltip.style.top = `${Math.max(12, Math.min(top < 12 ? event.point.y + 18 : top, stage.clientHeight - tooltip.offsetHeight - 12))}px`;
     });
     map.getCanvas().addEventListener('mouseleave', clearHover);
+    mapButtons = createMapButtons({
+      map, stage, locations, names: profileNames, onSelect,
+      areas: AREA_LABELS.filter((area) => areaBounds.has(area.id)),
+      onHover: (id) => {
+        const filter = ['==', ['get', 'id'], id || ''];
+        map.setFilter('county-hover', filter);
+        map.setFilter('reservation-hover', filter);
+      },
+    });
     ready = true;
     select(selectedId, false);
     if (!selectedId) resetView(false);
     onStatus('');
-    onReady();
   });
 
   function clearHover() {
@@ -264,39 +335,30 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
 
   function resetView(animate = true) {
     overview = true;
+    map.resize();
+    lastSize = stageSize();
     map.fitBounds(overviewBounds(), {
       padding: padding(), retainPadding: false,
       duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
+      easing: cameraEasing,
       maxZoom: 12,
     });
   }
 
-  function keepSelectedVisible(animate = true) {
+  function focusSelection(animate = true) {
+    const safe = padding(true);
+    const duration = animate && !reducedMotion.matches ? MAP_STYLE.duration : 0;
     const boundary = areaBounds.get(selectedId);
     if (boundary && !boundary.isEmpty()) {
-      const safe = padding(true);
-      const corners = [boundary.getNorthWest(), boundary.getSouthEast()].map((corner) => map.project(corner));
-      if (corners.some((point) => point.x < safe.left || point.x > stage.clientWidth - safe.right ||
-        point.y < safe.top || point.y > stage.clientHeight - safe.bottom)) {
-        map.fitBounds(boundary, {
-          padding: safe, retainPadding: false, maxZoom: 12,
-          duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
-        });
-      }
+      // Always frame an area, even if it was already visible in the overview.
+      map.fitBounds(boundary, { padding: safe, retainPadding: false, maxZoom: 10, duration, easing: cameraEasing });
       return;
     }
     const feature = locations.features.find((item) => item.properties.id === selectedId);
     if (!feature) return;
-    const point = map.project(feature.geometry.coordinates);
-    const safe = padding(true);
-    const width = stage.clientWidth;
-    const height = stage.clientHeight;
-    const targetX = Math.max(safe.left, Math.min(width - safe.right, point.x));
-    const targetY = Math.max(safe.top, Math.min(height - safe.bottom, point.y));
-    if (Math.abs(targetX - point.x) < 1 && Math.abs(targetY - point.y) < 1) return;
-    // Pan only as much as needed; keep the reader's zoom and route context.
-    map.panBy([point.x - targetX, point.y - targetY], {
-      duration: animate && !reducedMotion.matches ? MAP_STYLE.duration : 0,
+    map.easeTo({
+      center: feature.geometry.coordinates, zoom: MAP_STYLE.pointZoom,
+      padding: safe, retainPadding: false, duration, easing: cameraEasing,
     });
   }
 
@@ -304,6 +366,9 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
     clearHover();
     selectedId = id;
     if (!ready) return;
+    map.resize();
+    lastSize = stageSize();
+    mapButtons.select(id);
     const filter = ['==', ['get', 'id'], id ?? ''];
     map.setFilter('people-selected-ring', filter);
     map.setFilter('people-selected', filter);
@@ -311,7 +376,7 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
     map.setFilter('county-selected', filter);
     if (id) {
       overview = false;
-      keepSelectedVisible(animate);
+      focusSelection(animate);
     }
   }
 
@@ -322,6 +387,8 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
   const observer = new ResizeObserver(() => {
     cancelAnimationFrame(resizeFrame);
     resizeFrame = requestAnimationFrame(() => {
+      if (lastSize === stageSize()) return;
+      lastSize = stageSize();
       map.resize();
       if (!ready) return;
       // Refit when switching layouts so the desktop extent does not crop the
@@ -330,12 +397,11 @@ export function createRouteMap({ token, pipeline, locations, reservation, counti
         wasNarrow = narrow.matches;
         resetView(false);
       }
-      if (selectedId) keepSelectedVisible(false);
+      if (selectedId) focusSelection(false);
       else if (overview) resetView(false);
     });
   });
   observer.observe(stage);
-  observer.observe(panel);
 
   return { select, resetView };
 }
