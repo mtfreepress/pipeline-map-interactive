@@ -6,13 +6,26 @@
     <title>Along the route · Embed preview</title>
     <style>
       body { margin: 0; background: #f5f3ee; }
+      .article-column { max-width: 677px; margin: 0 auto; }
       .pipeline-embed { display: block; width: 100%; max-width: 1200px; height: min(700px, 100svh, 58.333vw); margin: 0 auto; border: 0; }
+      @media (min-width: 900px) {
+        iframe.pipeline-embed {
+          position: relative;
+          left: 50%;
+          transform: translateX(-50%);
+          width: min(1200px, calc(100vw - 32px)) !important;
+          max-width: none !important;
+          margin: 0 !important;
+        }
+      }
       @media (max-width: 899px) {
         .pipeline-embed { height: min(700px, 100svh); }
       }
     </style>
   </head>
   <body>
-    <iframe class="pipeline-embed" src="./index.html" title="Bridger pipeline route, people and Fort Peck Reservation" loading="lazy" width="1200" height="700"></iframe>
+    <main class="article-column">
+      <iframe class="pipeline-embed" src="./index.html" title="Bridger pipeline route, people and Fort Peck Reservation" loading="lazy" width="1200" height="700"></iframe>
+    </main>
   </body>
 </html>

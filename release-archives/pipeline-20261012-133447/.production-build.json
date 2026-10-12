@@ -1,0 +1,19 @@
+{
+  "builtAt": "2026-10-12T19:26:53.607Z",
+  "files": {
+    ".DS_Store": "e85b766c4dc68758411961ecf500baa06c5b67863938fbbcd070912148314b2c",
+    "assets/index-C3ssKf9d.js": "21f0a6bef4863d899eff84ff37ac2eb6064650cd864fb6be02adcf4c41abc0d4",
+    "assets/index-YaX0BAAd.css": "34e781029adb998578f358270b21ace87f7279b65e1457ca5b55ef61e0c2db9c",
+    "assets/map-CYAh0m7-.js": "271082fc55cbbac4aa0e42d0f4adc3ac42526ebe8648f9c9fd6fe4ad4cd8b10f",
+    "data/counties.geojson": "abd8a8c3fbf0b6866f0788c66ece619b6692a318645d487ae65983bc6fbb775b",
+    "data/fort-peck-reservation.geojson": "9b499c178c6b12443abff5631d5bb68eb2726adf8d300a6290b4cbdf17433a52",
+    "data/people.geojson": "acb06c72f3f076a28816c5d238878109257e96755e449dbc53f25711f9f710c3",
+    "data/pipeline.geojson": "990b80345db76c259a4052dc25e9f82b66d6fb5350a5e6860df415d35c792e1d",
+    "embed.html": "a8db7b8787ea4a73ecb5699ebfe6bca22a175967a257a947580e81aa3fe4df90",
+    "index.html": "2719c9eac7657925086c794db20a4d14091e75ae1be443d1118c3a49a7608909",
+    "photos/demo-detail.svg": "fdb01f6e4f192f1d71345d38f1cadd75066857e9107c6386eef84ef69e261840",
+    "photos/demo-home.svg": "4c8405acc1264b6a198dc7326edadff83c7fb63ccb916249d69b9b3be943f84a",
+    "photos/demo-landscape.svg": "03e6ed3f193000f6830d6f311ad5a91d633f54fa06bbabd37a383a50033c28d5",
+    "photos/demo-portrait.svg": "886cfdc5e71fcb677a1b77b852a042cde01ee011dcdf30b28d0e11673779724e"
+  }
+}

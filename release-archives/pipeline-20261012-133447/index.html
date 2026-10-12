@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f5f3ee" />
+    <meta name="description" content="An interactive Bridger pipeline map with people and places along the route." />
+    <title>Along the route · Pipeline interactive</title>
+    <script type="module" crossorigin src="./assets/index-C3ssKf9d.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-YaX0BAAd.css">
+  </head>
+  <body>
+    <main id="app" aria-label="Along the route">
+      <section class="map-stage" aria-label="Pipeline route and people">
+        <div class="map-viewport">
+          <div id="map" aria-label="Interactive pipeline map. Select a point or highlighted area to explore a profile."></div>
+          <div class="map-legend" aria-label="Map legend">
+            <span><i class="route-key" aria-hidden="true"></i>Pipeline</span>
+          </div>
+          <div id="map-status" class="map-status" role="status" aria-live="polite"></div>
+
+        </div>
+
+        <div class="profile-panel">
+          <aside id="intro-panel" class="intro-panel" aria-label="About the map">
+            <span class="section-number" aria-hidden="true">ON THE MAP</span>
+            <h2>Along the route</h2>
+            <p>People and places along the Bridger pipeline route.</p>
+            <p class="intro-note">Select a point, Fort Peck Reservation or a county commission area to explore.</p>
+          </aside>
+
+          <section id="viewer" class="viewer" aria-labelledby="person-name" tabindex="-1" hidden>
+            <header class="viewer-header">
+              <div>
+                <h2 id="person-name"></h2>
+                <p id="person-location" class="person-location"></p>
+              </div>
+              <button id="close-viewer" class="icon-button close-button" type="button" aria-label="Close person details">×</button>
+            </header>
+            <div class="viewer-content">
+              <section class="gallery" aria-label="Photographs" aria-roledescription="carousel">
+                <figure>
+                  <div id="photo-frame" class="photo-frame" aria-busy="false">
+                    <p id="photo-message" class="photo-message" role="status"></p>
+                  </div>
+                  <div id="carousel-controls" class="carousel-controls" hidden>
+                    <button id="previous-photo" class="icon-button" type="button" aria-label="Previous photograph">←</button>
+                    <p id="photo-count" aria-live="polite" aria-atomic="true"></p>
+                    <button id="next-photo" class="icon-button" type="button" aria-label="Next photograph">→</button>
+                  </div>
+                  <figcaption id="photo-caption-block">
+                    <p id="photo-caption"></p>
+                    <p id="photo-credit" class="photo-credit"></p>
+                  </figcaption>
+                </figure>
+              </section>
+              <p id="person-description" class="person-description"></p>
+            </div>
+          </section>
+
+        </div>
+      </section>
+
+      <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
+      <noscript><p class="noscript">This interactive requires JavaScript. Please refer to the accompanying article for the story.</p></noscript>
+    </main>
+  </body>
+</html>

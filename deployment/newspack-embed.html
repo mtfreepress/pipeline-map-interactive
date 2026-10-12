@@ -1,0 +1,31 @@
+<!-- Add CSS through approved theme/custom CSS if Newspack strips <style>. -->
+<style>
+  .pipeline-embed {
+    display: block;
+    width: 100%;
+    max-width: 1200px;
+    height: min(700px, 100svh, 58.333vw);
+    margin: 0 auto;
+    border: 0;
+  }
+
+  /* Break out of a centered article column on desktop. */
+  @media (min-width: 900px) {
+    iframe.pipeline-embed {
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(1200px, calc(100vw - 32px)) !important;
+      max-width: none !important;
+      margin: 0 !important;
+    }
+  }
+
+  @media (max-width: 899px) {
+    .pipeline-embed {
+      height: min(700px, 100svh);
+    }
+  }
+</style>
+<iframe class="pipeline-embed" src="https://projects.montanafreepress.org/pipeline/index.html"
+  title="Bridger pipeline route and people living nearby" loading="lazy" width="1200" height="700"></iframe>

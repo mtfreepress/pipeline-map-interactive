@@ -329,12 +329,27 @@ test('resizing an open profile keeps a single map and stays inside the viewport'
   }
 });
 
-test('embed preview scales within the parent viewport and desktop maximum', async ({ page }) => {
+test('embed breaks out of a centered article column on desktop and fits the viewport', async ({ page }) => {
   await page.goto('http://127.0.0.1:4176/pipeline/embed.html');
+  // Simulate more-specific frontend theme rules that override the embed's CSS.
+  await page.addStyleTag({ content: `
+    @media (min-width: 900px) {
+      body .article-column iframe { width: 100%; max-width: 100%; margin: 32px 0; }
+    }
+  ` });
   for (const [width, height] of [[1440, 900], [1024, 768], [768, 1024], [390, 844], [320, 568]]) {
     await page.setViewportSize({ width, height });
-    await expect.poll(() => page.locator('iframe').evaluate(el => el.clientWidth)).toBe(Math.min(width, 1200));
+    const expectedWidth = width >= 900 ? Math.min(width - 32, 1200) : Math.min(width, 677);
+    if (width >= 900) await expect(page.locator('iframe')).toHaveCSS('margin-top', '0px');
+    await expect.poll(() => page.locator('iframe').evaluate(el => el.clientWidth)).toBe(expectedWidth);
     expect(await page.locator('iframe').evaluate(el => el.clientHeight)).toBeLessThanOrEqual(Math.min(height, 700));
+    const bounds = await page.locator('iframe').evaluate(el => {
+      const { left, right } = el.getBoundingClientRect();
+      return { left, right, pageWidth: document.documentElement.scrollWidth };
+    });
+    expect(bounds.left).toBeCloseTo((width - expectedWidth) / 2, 0);
+    expect(bounds.right).toBeLessThanOrEqual(width);
+    expect(bounds.pageWidth).toBeLessThanOrEqual(width);
   }
 });
 

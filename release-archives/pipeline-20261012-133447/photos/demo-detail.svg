@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <rect width="1200" height="900" fill="#e1e5da"/>
+  <path d="M0 402 430 355 910 427 1200 375V900H0Z" fill="#b2bea1"/>
+  <path d="M0 595 400 553 840 627 1200 549V900H0Z" fill="#899d7c"/>
+  <g stroke="#797264" stroke-width="27"><path d="M220 322v480M600 350v452M985 330v472"/></g>
+  <path d="m0 428 1200 32M0 580l1200 26" stroke="#f2edda" stroke-width="11"/>
+  <g stroke="#587462" stroke-width="9" fill="none"><path d="m99 802 32-197 35 197m150 0-7-173 40 173m430 0 36-170 12 170m208 0-30-128 59 128"/></g>
+  <rect x="40" y="40" width="220" height="56" rx="3" fill="#fffefa"/>
+  <text x="62" y="77" font-family="Arial,sans-serif" font-size="25" fill="#324744" letter-spacing="3">DEMO IMAGE</text>
+  <rect y="802" width="1200" height="98" fill="#fffefa"/>
+  <text x="40" y="865" font-family="Georgia,serif" font-size="36" fill="#243735">04 / A closer look</text>
+</svg>

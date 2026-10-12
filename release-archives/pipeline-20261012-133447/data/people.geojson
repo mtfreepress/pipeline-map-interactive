@@ -1,0 +1,84 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "kleeman",
+      "properties": {
+        "id": "kleeman",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -105.884126077175,
+          48.759846442187
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "thielen",
+      "properties": {
+        "id": "thielen",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -104.450158147867,
+          46.45497029121
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "jerry-arnold",
+      "properties": {
+        "id": "jerry-arnold",
+        "locationSource": "manual"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -106.166119,
+          48.796697
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mike-kjos",
+      "properties": {
+        "id": "mike-kjos",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -104.14950492955,
+          47.954536493075
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fladager",
+      "properties": {
+        "id": "fladager",
+        "locationSource": "census",
+        "geocodeMatch": "Exact"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -105.803618754246,
+          48.809305956886
+        ]
+      }
+    }
+  ]
+}
