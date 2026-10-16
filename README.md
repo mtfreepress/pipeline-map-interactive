@@ -2,7 +2,7 @@
 
 A static, iframe-ready pipeline map for a news article. Vite builds vanilla JavaScript, Mapbox GL JS, local GeoJSON and a responsive HTML photo viewer. There is one Mapbox map, no backend, database, geocoder or carousel dependency.
 
-The route comes from `pipeline-geometry/BridgerShapefile_20260326.shp`. Eight profiles use newsroom-supplied names and locations; photographs and captions have not been added yet. See [route conversion notes](pipeline-geometry/README.md) for the source projection and GeoJSON export command.
+The route comes from `pipeline-geometry/BridgerShapefile_20260326.shp`. Nine profiles use newsroom-supplied names and locations, imported captions, and optimized newsroom photographs. See [route conversion notes](pipeline-geometry/README.md) for the source projection and GeoJSON export command.
 
 ## Local development
 
@@ -136,9 +136,42 @@ Fort Peck Tribes uses the Polygon/MultiPolygon boundary in `public/data/fort-pec
 
 This coordinate is also a synthetic example. Choose the precision of published locations with the people and editorial team. Nearby points share a counted photo button; its chooser lets readers select each person by name.
 
+### Importing captions
+
+Edit/export `map-info-captions.csv` with the existing `name`, `address`, and `caption` columns, then run:
+
+```sh
+npm run captions:import
+npm run captions:check
+```
+
+The import command generates `src/captions.json`, keyed by profile ID. `src/people.js` uses those captions, shared across the photographs for each profile. The development server refreshes when the generated file changes; run `npm run dev` if it is not already running. Commit `src/captions.json` with caption updates. The CSV stays ignored and its addresses are not copied into the generated output. Builds use the generated JSON and do not require the local CSV.
+
+Keep the existing names; no slug conversion is needed. Names match the profiles in `src/profiles.js`, with `Daniels County Images` explicitly mapped to `daniels-county`. Profile IDs also work in the `name` column. Row order does not affect the mapping or slideshow order. Include exactly one nonblank caption for every profile. Unknown names, duplicate profiles, missing rows, blank captions, and malformed CSV stop the import without replacing the previous output. Quoted commas, doubled quotes, and multiline captions are supported; wording is preserved except for leading/trailing whitespace.
+
+`npm run captions:check` validates the CSV and exits with an error if the generated file is out of date, without writing changes. An alternate input file can be passed with `npm run captions:import -- path/to/captions.csv`. To test the importer, run `npm run test:captions`.
+
+This CSV currently supplies one caption per location. When final photographs need different captions, extend the sheet with stable photo IDs rather than relying on row order. The caption importer never rewrites photo paths, order, alt text, or credits. Do not edit the generated JSON by hand.
+
+### Importing photographs
+
+Keep originals in `pictures-pipeline-story/` and name them `<profile-id>-<number>.jpg`. Run:
+
+```sh
+npm run photos:import
+```
+
+This requires ImageMagick 7 (`magick`). It reads originals without modifying or renaming them, sorts photo numbers numerically within each profile, and creates WebP files under `public/photos/processed/` plus `src/photos.json`. The known source spelling `fladger` maps to `fladager`; other unknown IDs, duplicate photo numbers, missing profiles, and malformed filenames stop the import. Number gaps are allowed. The original directory is outside `public/` and never included in the site build.
+
+Previews fit inside 800 × 800px at quality 80; enlarged copies fit inside 1600 × 1600px at quality 85. Aspect ratio is preserved, smaller sources are never enlarged, EXIF orientation is applied, and derivative metadata is stripped after conversion to sRGB. File hashes change when originals or conversion settings change. Unchanged derivatives are reused on later imports. The manifest is replaced only after every photo succeeds; previous hashed files are retained so older pages keep working.
+
+Edit `src/photo-details.json` for descriptive alt text and credit overrides, keyed by `<profile-id>-<number>`, then rerun the importer. Missing alt text stops import. Without a credit override, the source EXIF Artist is used if present. These photographs use the confirmed credit “Lauren Miller, Montana Free Press, CatchLight Local/Report for America.” The existing CSV remains the source of the shared profile captions; embedded photo captions are not substituted automatically.
+
+Commit the processed WebP files, `src/photos.json`, and editorial metadata with changes. Regular builds use the generated files and need neither originals nor ImageMagick. To import another source directory, use `npm run photos:import -- path/to/originals`. Run `npm run test:photos` to test ordering, validation, conversion, and preservation of originals. Preview images load on profile selection; the full-size copy is requested only when enlarged. The demo SVGs remain solely for browser tests.
+
 ### Editorial metadata and photographs
 
-Export the `people` array in `src/people.js`:
+The map-facing `people` array in `src/people.js` combines `src/profiles.js`, generated captions, and the generated photo manifest. Each entry has this shape:
 
 ```js
 export const people = [{
@@ -239,7 +272,7 @@ Before publication:
 
 1. Editorially verify the supplied profiles and locations, and add photographs and captions when available. Configure the public token's allowed project URLs separately in Mapbox, and check its use from the final iframe.
 2. Build with the production token. Serve HTML as `text/html`, JS as `text/javascript`, CSS as `text/css`, GeoJSON as `application/geo+json` or `application/json`, WebP as `image/webp`, and SVG as `image/svg+xml`.
-3. Give hashed `assets/` files long immutable caching. Keep `index.html`, GeoJSON and photographs on a shorter cache policy, or use new photo filenames when replacing images. Local GeoJSON and photo names are not content-hashed. Invalidate updated non-hashed CloudFront paths as needed.
+3. Give hashed `assets/` files long immutable caching. Keep `index.html`, GeoJSON and photographs on a shorter cache policy, or use new photo filenames when replacing images. Local GeoJSON and demo photo names are not content-hashed; processed newsroom photos include a hash of the original, conversion settings, and ImageMagick version. Invalidate updated non-hashed CloudFront paths as needed.
 4. Verify the host's response headers allow the intended WordPress/Newspack site to frame the project (`frame-ancestors` and any `X-Frame-Options` policy). If adding a CSP, allow the Mapbox endpoints and blob workers required by your installed Mapbox version. Test the real embed rather than guessing a restrictive policy.
 5. Check Mapbox attribution, mobile controls, keyboard operation, failed-image states and console/network errors with the final token and data.
 

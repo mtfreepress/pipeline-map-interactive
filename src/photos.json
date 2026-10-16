@@ -1,0 +1,339 @@
+{
+  "daniels-county": [
+    {
+      "id": "daniels-county-1",
+      "src": "./photos/processed/daniels-county-1-2be65454216d-preview.webp",
+      "fullSrc": "./photos/processed/daniels-county-1-2be65454216d-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "A man sitting at a bar counter beneath hanging lamps.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "daniels-county-2",
+      "src": "./photos/processed/daniels-county-2-46ada25ffefe-preview.webp",
+      "fullSrc": "./photos/processed/daniels-county-2-46ada25ffefe-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "A pickup parked in front of grain elevators at dusk.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "daniels-county-3",
+      "src": "./photos/processed/daniels-county-3-7d2055244981-preview.webp",
+      "fullSrc": "./photos/processed/daniels-county-3-7d2055244981-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "Grain elevators and a parked pickup beneath the evening sky.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "valley-county-commission": [
+    {
+      "id": "valley-county-commission-1",
+      "src": "./photos/processed/valley-county-commission-1-ce4650a3365f-preview.webp",
+      "fullSrc": "./photos/processed/valley-county-commission-1-ce4650a3365f-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "View through a doorway into a room where people are meeting.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "valley-county-commission-2",
+      "src": "./photos/processed/valley-county-commission-2-927263299418-preview.webp",
+      "fullSrc": "./photos/processed/valley-county-commission-2-927263299418-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "Dark record books labeled Valley County arranged on a shelf.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "valley-county-commission-3",
+      "src": "./photos/processed/valley-county-commission-3-4a6012f672ae-preview.webp",
+      "fullSrc": "./photos/processed/valley-county-commission-3-4a6012f672ae-full.webp",
+      "width": 532,
+      "height": 800,
+      "fullWidth": 1065,
+      "fullHeight": 1600,
+      "alt": "Three men standing together in an office lined with shelves.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "kleeman": [
+    {
+      "id": "kleeman-1",
+      "src": "./photos/processed/kleeman-1-049da1824ed4-preview.webp",
+      "fullSrc": "./photos/processed/kleeman-1-049da1824ed4-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1067,
+      "fullHeight": 1600,
+      "alt": "A photographic portrait print of a couple surrounded by soil textures.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "kleeman-2",
+      "src": "./photos/processed/kleeman-2-4c1c3da619bd-preview.webp",
+      "fullSrc": "./photos/processed/kleeman-2-4c1c3da619bd-full.webp",
+      "width": 800,
+      "height": 533,
+      "fullWidth": 1600,
+      "fullHeight": 1067,
+      "alt": "A sepia-toned photographic print of cattle in a field.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "kleeman-3",
+      "src": "./photos/processed/kleeman-3-508b37eeb323-preview.webp",
+      "fullSrc": "./photos/processed/kleeman-3-508b37eeb323-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1066,
+      "fullHeight": 1600,
+      "alt": "A photographic print of tall plants and seed heads rising from soil.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "thielen": [
+    {
+      "id": "thielen-1",
+      "src": "./photos/processed/thielen-1-788e81eb3eef-preview.webp",
+      "fullSrc": "./photos/processed/thielen-1-788e81eb3eef-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1067,
+      "fullHeight": 1600,
+      "alt": "A sepia-toned photographic print of a man wearing a hat, surrounded by soil textures.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "thielen-2",
+      "src": "./photos/processed/thielen-2-d1e03e77e584-preview.webp",
+      "fullSrc": "./photos/processed/thielen-2-d1e03e77e584-full.webp",
+      "width": 800,
+      "height": 533,
+      "fullWidth": 1600,
+      "fullHeight": 1066,
+      "alt": "A sepia-toned photographic print of utility poles in an open landscape.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "thielen-3",
+      "src": "./photos/processed/thielen-3-4012e77e7845-preview.webp",
+      "fullSrc": "./photos/processed/thielen-3-4012e77e7845-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1067,
+      "fullHeight": 1600,
+      "alt": "A photographic print of tall grain stalks rising from soil.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "jerry-arnold": [
+    {
+      "id": "jerry-arnold-1",
+      "src": "./photos/processed/jerry-arnold-1-43c97880cae0-preview.webp",
+      "fullSrc": "./photos/processed/jerry-arnold-1-43c97880cae0-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1067,
+      "fullHeight": 1600,
+      "alt": "A sepia-toned photographic print of a man wearing glasses, surrounded by soil textures.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "jerry-arnold-2",
+      "src": "./photos/processed/jerry-arnold-2-9b89d7ba9242-preview.webp",
+      "fullSrc": "./photos/processed/jerry-arnold-2-9b89d7ba9242-full.webp",
+      "width": 800,
+      "height": 533,
+      "fullWidth": 1600,
+      "fullHeight": 1067,
+      "alt": "A sepia-toned photographic print of farm fields with textured soil marks.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "jerry-arnold-3",
+      "src": "./photos/processed/jerry-arnold-3-7c7ead4dab6e-preview.webp",
+      "fullSrc": "./photos/processed/jerry-arnold-3-7c7ead4dab6e-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1067,
+      "fullHeight": 1600,
+      "alt": "A photographic print of grain stalks rising from dark soil.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "carter-county-commission": [
+    {
+      "id": "carter-county-commission-1",
+      "src": "./photos/processed/carter-county-commission-1-2525b9f4039a-preview.webp",
+      "fullSrc": "./photos/processed/carter-county-commission-1-2525b9f4039a-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1064,
+      "alt": "A woman at an open window beneath a flag on a light-colored building.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "carter-county-commission-2",
+      "src": "./photos/processed/carter-county-commission-2-8b737bca7280-preview.webp",
+      "fullSrc": "./photos/processed/carter-county-commission-2-8b737bca7280-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1064,
+      "alt": "View through a dim interior toward a window and the street outside.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "carter-county-commission-3",
+      "src": "./photos/processed/carter-county-commission-3-2d835697121a-preview.webp",
+      "fullSrc": "./photos/processed/carter-county-commission-3-2d835697121a-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "Worn record books labeled Carter County on a shelf.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "carter-county-commission-4",
+      "src": "./photos/processed/carter-county-commission-4-0046beb48619-preview.webp",
+      "fullSrc": "./photos/processed/carter-county-commission-4-0046beb48619-full.webp",
+      "width": 532,
+      "height": 800,
+      "fullWidth": 1064,
+      "fullHeight": 1600,
+      "alt": "A man in a plaid shirt sitting beside a window.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "carter-county-commission-5",
+      "src": "./photos/processed/carter-county-commission-5-32f16ae7fad5-preview.webp",
+      "fullSrc": "./photos/processed/carter-county-commission-5-32f16ae7fad5-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "A person standing beside chairs in a county meeting room.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "carter-county-commission-6",
+      "src": "./photos/processed/carter-county-commission-6-f104aff16335-preview.webp",
+      "fullSrc": "./photos/processed/carter-county-commission-6-f104aff16335-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "A street lined with trees and utility poles beneath a blue sky.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "mike-kjos": [
+    {
+      "id": "mike-kjos-1",
+      "src": "./photos/processed/mike-kjos-1-bb6d5293d337-preview.webp",
+      "fullSrc": "./photos/processed/mike-kjos-1-bb6d5293d337-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1066,
+      "fullHeight": 1600,
+      "alt": "A sepia-toned photographic print of a man standing beneath a utility pole.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "mike-kjos-2",
+      "src": "./photos/processed/mike-kjos-2-08dd6434fbc9-preview.webp",
+      "fullSrc": "./photos/processed/mike-kjos-2-08dd6434fbc9-full.webp",
+      "width": 800,
+      "height": 533,
+      "fullWidth": 1600,
+      "fullHeight": 1066,
+      "alt": "A sepia-toned photographic print of a framed portrait with textured marks.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "mike-kjos-3",
+      "src": "./photos/processed/mike-kjos-3-87d0959136ab-preview.webp",
+      "fullSrc": "./photos/processed/mike-kjos-3-87d0959136ab-full.webp",
+      "width": 533,
+      "height": 800,
+      "fullWidth": 1067,
+      "fullHeight": 1600,
+      "alt": "A photographic print of stems, leaves, and small flowers rising from soil.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "fort-peck-tribes": [
+    {
+      "id": "fort-peck-tribes-1",
+      "src": "./photos/processed/fort-peck-tribes-1-38affa63612c-preview.webp",
+      "fullSrc": "./photos/processed/fort-peck-tribes-1-38affa63612c-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "A man sitting at a meeting desk beneath a large wall map.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "fort-peck-tribes-2",
+      "src": "./photos/processed/fort-peck-tribes-2-d73a9b9cd35d-preview.webp",
+      "fullSrc": "./photos/processed/fort-peck-tribes-2-d73a9b9cd35d-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1064,
+      "alt": "People gathered around desks in a tribal meeting room.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "fort-peck-tribes-3",
+      "src": "./photos/processed/fort-peck-tribes-3-a5c5b01063c1-preview.webp",
+      "fullSrc": "./photos/processed/fort-peck-tribes-3-a5c5b01063c1-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1064,
+      "alt": "A woman speaking at a desk with flags behind her.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    },
+    {
+      "id": "fort-peck-tribes-4",
+      "src": "./photos/processed/fort-peck-tribes-4-f0d0d6e4f177-preview.webp",
+      "fullSrc": "./photos/processed/fort-peck-tribes-4-f0d0d6e4f177-full.webp",
+      "width": 800,
+      "height": 532,
+      "fullWidth": 1600,
+      "fullHeight": 1065,
+      "alt": "Exterior of a building with a curved entrance and flags outside.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ],
+  "fladager": [
+    {
+      "id": "fladager-1",
+      "src": "./photos/processed/fladager-1-6c504016e3b9-preview.webp",
+      "fullSrc": "./photos/processed/fladager-1-6c504016e3b9-full.webp",
+      "width": 532,
+      "height": 800,
+      "fullWidth": 1065,
+      "fullHeight": 1600,
+      "alt": "A woman with glasses speaking and gesturing indoors.",
+      "credit": "Lauren Miller, Montana Free Press, CatchLight Local/Report for America"
+    }
+  ]
+}

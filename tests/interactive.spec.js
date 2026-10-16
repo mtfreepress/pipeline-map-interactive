@@ -554,3 +554,41 @@ for (const width of [390, 1200]) {
     await expect(group.locator('.marker-count')).toHaveText('3');
   });
 }
+
+for (const width of [390, 1200]) {
+  test(`newsroom photographs load in order and full-size files stay on demand at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    const requests = [];
+    page.on('request', request => { if (request.url().includes('/photos/')) requests.push(request.url()); });
+    await openMap(page);
+    expect(requests).toHaveLength(0);
+    for (const person of people) {
+      await selectProfile(page, person.id);
+      for (const [index, photo] of person.photos.entries()) {
+        await expect(page.locator('#photo-frame img')).toBeVisible();
+        await expect(page.locator('#photo-frame img')).toHaveAttribute('src', photo.src);
+        await expect(page.locator('#photo-caption')).toHaveText(photo.caption);
+        await expect(page.locator('#photo-credit')).toHaveText('Lauren Miller, Montana Free Press, CatchLight Local/Report for America');
+        if (person.photos.length > 1) await expect(page.locator('#photo-count')).toHaveText(`${index + 1} / ${person.photos.length}`);
+        else await expect(page.locator('#carousel-controls')).toBeHidden();
+        if (person.id === 'kleeman' && index === 0) await page.screenshot({ path: testInfo.outputPath('newsroom-portrait.png') });
+        if (index < person.photos.length - 1) await page.getByRole('button', { name: 'Next photograph', exact: true }).click();
+      }
+    }
+    expect(requests.some(url => url.includes('-full.webp'))).toBe(false);
+    expect(requests.some(url => url.includes('demo-'))).toBe(false);
+    await selectProfile(page, 'kleeman');
+    await page.getByRole('button', { name: 'Enlarge photograph', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Enlarged photograph', exact: true });
+    await expect(dialog.locator('img')).toBeVisible();
+    await expect(dialog.locator('img')).toHaveAttribute('src', people.find(person => person.id === 'kleeman').photos[0].fullSrc);
+    expect(requests.filter(url => url.includes('-full.webp'))).toHaveLength(1);
+    await page.screenshot({ path: testInfo.outputPath('newsroom-enlarged.png') });
+    await page.getByRole('button', { name: 'Next enlarged photograph' }).click();
+    await expect(dialog.locator('img')).toBeVisible();
+    await expect(dialog.locator('img')).toHaveAttribute('src', people.find(person => person.id === 'kleeman').photos[1].fullSrc);
+    expect(requests.filter(url => url.includes('-full.webp'))).toHaveLength(2);
+  });
+}

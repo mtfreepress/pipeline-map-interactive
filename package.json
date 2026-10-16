@@ -11,6 +11,11 @@
     "build:production": "node scripts/build-production.mjs",
     "deploy:plan": "node scripts/deploy.mjs",
     "deploy:apply": "node scripts/deploy.mjs --apply",
+    "photos:import": "node scripts/import-photos.mjs",
+    "test:photos": "node --test scripts/import-photos.test.mjs",
+    "captions:import": "node scripts/import-captions.mjs",
+    "captions:check": "node scripts/import-captions.mjs --check",
+    "test:captions": "node --test scripts/import-captions.test.mjs",
     "test:deployment": "node --test scripts/deploy.test.mjs"
   },
   "engines": {
