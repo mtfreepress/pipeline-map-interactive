@@ -147,7 +147,8 @@ export const people = [{
   location: 'Editorial location label',
   description: 'Optional short contextual text.',
   photos: [{
-    src: './photos/person-a-01.webp',
+    src: './photos/person-a-01.webp', // Small panel preview
+    fullSrc: './photos/person-a-01-large.webp', // Optional; fetched only when enlarged
     alt: 'A useful description of the photograph.',
     caption: 'Optional caption.',
     credit: 'Optional photo credit.',
@@ -155,7 +156,7 @@ export const people = [{
 }];
 ```
 
-Photograph URLs resolve relative to the document, so `./photos/...` works from `/pipeline/index.html`. Put files directly in `public/photos/`; Vite copies this directory to `dist/photos/`. Use descriptive alt text for every image. Preprocess newsroom photos to approximately 1,200–1,600 pixels on the long edge, preferably WebP. Images are contained rather than cropped; portrait and landscape photographs both work. There is no transformation service.
+Photograph URLs resolve relative to the document, so `./photos/...` works from `/pipeline/index.html`. Put files directly in `public/photos/`; Vite copies this directory to `dist/photos/`. Use descriptive alt text for every image. Preprocess newsroom photos to approximately 1,200–1,600 pixels on the long edge, preferably WebP. Landscape previews fill the frame with a centered crop; portrait previews fit without cropping and align left. The enlarged viewer always shows the full image; portrait and landscape photographs both work without changing the header dimensions. The expand control opens a keyboard-accessible viewer covering the entire interactive, including inside an iframe, without requiring fullscreen permission. Close with × or Escape to return to the preview. There is no transformation service.
 
 Optional descriptions, locations, captions and credits are omitted when absent. One photograph hides the carousel controls/count. Zero photographs displays a text fallback. Unknown person ids display an unavailable-profile message and preserve the selected location. Malformed/failed location data displays a status message; profiles with other available geometry remain clickable. Failed route data produces a clear message; the app does not pretend to show a valid route.
 
@@ -173,9 +174,9 @@ The visible story header/footer have been removed; `story.title` still supplies 
 
 ### Responsive panels and iframe sizing
 
-The graphic's maximum size is 1200 × 700px. At 900px and wider, its height scales with width (7:12), capped by 700px and the available viewport height. The directions and photo viewer share a southwest panel; zoom controls sit at the top right on desktop and bottom left on mobile. The desktop overview extent is unchanged; selected areas leave space above their geometry for the controls.
+The desktop graphic's maximum size is 1200 × 700px. At 900px and wider, its height scales with width (7:12), capped by 700px and the available viewport height. The directions and photo viewer share a southwest panel; zoom controls sit at the top right on desktop and bottom left on mobile. The desktop overview extent is unchanged; selected areas leave space above their geometry for the controls.
 
-Below 900px, including portrait tablets, the map and panel stack within the available viewport height (capped at 700px). Before selection the map takes the remaining space above a compact introduction. With a profile open, the viewer reserves space for its actual header height, photograph, gallery controls, and a caption preview; the map fills the remaining space (at least 160px). The redundant “Along the route” heading is removed from the photo viewer. The profile name, photo and 44px gallery controls fit together on typical phone screens. Long captions/descriptions scroll within the panel, while the map and close button stay available. Landscape tablets at least 900px wide use the wide layout. The breakpoint is based on space for the content, not device detection.
+Below 900px, including portrait tablets, the map and panel stack within the full dynamic viewport height, without a 700px cap. Before selection the map takes the remaining space above a compact introduction. With a profile open, the map receives roughly 40% of the height (at least 160px), and the photo panel receives the rest. The preview height grows with the viewport. The redundant “Along the route” heading is removed from the photo viewer. The profile name, photo and 44px gallery controls fit together on typical phone screens. Long captions/descriptions scroll within the panel, while the map and close button stay available. Landscape tablets at least 900px wide use the wide layout. The breakpoint is based on space for the content, not device detection.
 
 Open `/embed.html` for the responsive iframe preview. The parent article must set the iframe height; the app cannot determine how much space surrounding article content occupies. The following markup caps the embed to the host viewport and the desktop maximum:
 
@@ -187,7 +188,7 @@ Open `/embed.html` for the responsive iframe preview. The parent article must se
     margin: 0 auto; border: 0;
   }
   @media (max-width: 899px) {
-    .pipeline-embed { height: min(700px, 100svh); }
+    .pipeline-embed { height: 100dvh; }
   }
 </style>
 <iframe
@@ -201,6 +202,8 @@ Open `/embed.html` for the responsive iframe preview. The parent article must se
 The host URL is the verified deployment target; the pipeline prefix is currently empty and publication is pending. The browser suite checks phones down to 320 × 568px, short phone viewports, portrait tablets and landscape/desktop layouts. It exercises real Mapbox rendering with a local basemap fixture and synthetic gallery images. Verify the actual publishing iframe, live basemap and final newsroom photographs before publication.
 
 ### Image loading
+
+Optional `fullSrc` provides a separate large photograph for the enlarged viewer; it is fetched only when the reader opens that photograph and is never included in neighbor preloading. When omitted, the viewer reuses `src`. Captions and credits remain visible in the enlarged viewer.
 
 Startup fetches local geography and metadata but no gallery images. Selecting a profile creates only its current image, using asynchronous decoding. After that image loads successfully, the carousel preloads its next and previous neighbors at low fetch priority (one neighbor for a two-photo profile). Navigation repeats this bounded strategy using normal browser caching. Data-saving connections skip adjacent preloading when the browser exposes that preference. Stale image callbacks cannot replace a newer selection or start preloading for a closed viewer. In-flight browser requests may finish after closing; they are not a custom image cache.
 

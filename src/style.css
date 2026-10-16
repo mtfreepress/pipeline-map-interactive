@@ -46,6 +46,8 @@ p, h1, h2, figure { margin: 0; }
 .map-status p + p { margin-top: 10px; }
 /* One shared anchor for directions and profile content. */
 .profile-panel { position: absolute; bottom: 40px; left: 20px; width: var(--panel-width); max-height: calc(100% - 170px); display: flex; flex-direction: column; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 3px 15px #1424220c; overflow: hidden; }
+.has-selection .profile-panel { top: 76px; max-height: none; }
+.has-selection .viewer { flex: 1; }
 .intro-panel { padding: 20px; overflow: auto; }
 .viewer { min-height: 0; }
 .section-number { color: var(--route); font-size: 17px; font-weight: 700; letter-spacing: 0.12em; }
@@ -57,11 +59,12 @@ p, h1, h2, figure { margin: 0; }
 .viewer-header > div { min-width: 0; }
 .viewer h2 { font: 500 32px/1.15 Georgia, 'Times New Roman', serif; letter-spacing: -0.025em; overflow-wrap: anywhere; }
 .person-location { color: var(--muted); font-size: var(--panel-meta-size); line-height: 1.5; margin-top: 5px; }
-.viewer-content { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.viewer-content { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .icon-button { width: 44px; height: 44px; flex: none; display: grid; place-content: center; font-size: 23px; line-height: 1; }
 .close-button { font-size: 27px; background: transparent; }
-.photo-frame { display: grid; place-items: center; position: relative; width: 100%; height: min(190px, 27svh); background: #ebece5; overflow: hidden; }
-.photo-frame img { display: block; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: contain; }
+.photo-frame { display: grid; place-items: center; position: relative; width: 100%; height: clamp(120px, 32svh, 280px); background: #ebece5; overflow: hidden; }
+.photo-frame img { display: block; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: contain; object-position: left center; }
+.photo-frame img.is-landscape { object-fit: cover; object-position: center; }
 .photo-message { padding: 24px; font-size: var(--panel-caption-size); line-height: 1.6; text-align: center; color: var(--muted); }
 .carousel-controls { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; border-bottom: 1px solid var(--border); }
 #photo-count { font-size: var(--panel-meta-size); font-variant-numeric: tabular-nums; letter-spacing: 0.08em; }
@@ -82,9 +85,10 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
 /* Compact layout includes portrait tablets; landscape tablets get the wide layout. */
 @media (max-width: 899px) {
   :root { --panel-body-size: 18px; --panel-caption-size: 17px; --panel-meta-size: 15px; }
-  #app { height: min(700px, 100svh); }
+  #app { height: 100dvh; }
   .map-stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
-  .has-selection .profile-panel { max-height: calc(min(700px, 100svh) - 160px); }
+  .has-selection .map-stage { grid-template-rows: minmax(160px, 2fr) minmax(0, 3fr); }
+  .has-selection .profile-panel { top: auto; max-height: none; }
   .map-viewport { position: relative; inset: auto; min-height: 0; }
   .map-legend { left: 12px; top: 12px; padding: 8px 10px; font-size: 16px; }
   .mapboxgl-ctrl-top-right { top: auto; right: auto; bottom: 26px; left: 2px; }
@@ -94,12 +98,12 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
   .intro-panel .section-number, .intro-panel .intro-note { display: none; }
   .intro-panel h2 { font-size: 22px; margin: 0 0 4px; }
   .intro-panel p { font-size: 16px; line-height: 1.4; }
-  .viewer { --photo-height: clamp(80px, 20svh, 148px); }
+  .viewer { --photo-height: clamp(80px, 25dvh, 320px); }
   .viewer-header { padding: 8px 12px; align-items: center; gap: 6px; }
   .viewer h2 { font-size: 23px; line-height: 1.15; }
   .person-location { margin-top: 3px; line-height: 1.3; }
-  /* Reserve photo, controls, and a caption preview; let the map use the rest. */
-  .viewer-content { height: calc(var(--photo-height) + 112px); scrollbar-gutter: auto; }
+  /* Share extra screen height between the map and the scrollable photo panel. */
+  .viewer-content { scrollbar-gutter: auto; }
   .photo-frame { height: var(--photo-height); }
   .photo-message { padding: 12px; }
   .carousel-controls { padding: 3px 12px; }
@@ -137,3 +141,19 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
   .reservation-button { font-size: 14px; }
 }
 .map-button-leaders { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; stroke: var(--point); stroke-width: 1.5; }
+
+/* Image controls stay out of layout; intrinsic photo dimensions never size the header. */
+.expand-photo { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: zoom-in; }
+.expand-photo:hover:not(:disabled) { background: transparent; }
+.expand-photo:focus-visible { outline-offset: -3px; }
+.expand-symbol { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; display: grid; place-items: center; background: #17201fed; color: white; border: 1px solid white; border-radius: 4px; }
+.expand-photo:hover .expand-symbol { background: #344b49; }
+.photo-lightbox { position: fixed; margin: 0; padding: 0; border: 0; max-width: none; max-height: none; background: #141918; color: white; overflow: hidden; }
+.photo-lightbox[open] { display: flex; flex-direction: column; }
+.photo-lightbox::backdrop { background: transparent; }
+.lightbox-image-area { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; }
+.lightbox-image-area img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+#lightbox-message { padding: 60px 24px; text-align: center; }
+.lightbox-close { position: absolute; top: 10px; right: 10px; z-index: 1; background: #17201fed; color: white; border-color: white; font-size: 32px; }
+.lightbox-close:hover:not(:disabled) { background: #344b49; }
+.lightbox-caption { flex: none; max-height: 25%; overflow: auto; padding: 12px 20px; font-size: 16px; line-height: 1.5; }

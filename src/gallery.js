@@ -7,6 +7,64 @@ export function createGallery(viewer) {
   const caption = viewer.querySelector('#photo-caption');
   const credit = viewer.querySelector('#photo-credit');
   const captionBlock = viewer.querySelector('#photo-caption-block');
+  const expand = viewer.querySelector('#expand-photo');
+  const lightbox = document.querySelector('#photo-lightbox');
+  const lightboxArea = lightbox.querySelector('.lightbox-image-area');
+  const lightboxMessage = lightbox.querySelector('#lightbox-message');
+  const lightboxCaption = lightbox.querySelector('#lightbox-caption');
+  const closePhoto = lightbox.querySelector('#close-photo');
+  const app = document.querySelector('#app');
+  let enlargedRevision = 0;
+
+  function positionLightbox() {
+    if (!lightbox.open) return;
+    const bounds = app.getBoundingClientRect();
+    Object.assign(lightbox.style, {
+      left: `${bounds.left}px`, top: `${bounds.top}px`,
+      width: `${bounds.width}px`, height: `${bounds.height}px`,
+    });
+  }
+  new ResizeObserver(positionLightbox).observe(app);
+  window.addEventListener('scroll', positionLightbox, { passive: true });
+  window.addEventListener('resize', positionLightbox);
+
+  function closeEnlarged() {
+    enlargedRevision++;
+    lightbox.close();
+    lightboxArea.querySelector('img')?.remove();
+  }
+  closePhoto.addEventListener('click', closeEnlarged);
+  lightbox.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeEnlarged();
+  });
+  expand.addEventListener('click', () => {
+    const photo = photos[index];
+    if (!photo || expand.hidden) return;
+    const currentRevision = ++enlargedRevision;
+    lightboxArea.querySelector('img')?.remove();
+    lightboxMessage.hidden = false;
+    lightboxMessage.textContent = 'Loading photograph…';
+    optionalText(lightboxCaption, [photo.caption, photo.credit].filter(Boolean).join(' — '));
+    lightbox.showModal();
+    positionLightbox();
+    const img = new Image();
+    img.alt = photo.alt || `Photograph accompanying the profile of ${personName}`;
+    img.decoding = 'async';
+    img.hidden = true;
+    img.addEventListener('load', () => {
+      if (currentRevision !== enlargedRevision) return;
+      lightboxMessage.hidden = true;
+      img.hidden = false;
+    }, { once: true });
+    img.addEventListener('error', () => {
+      if (currentRevision !== enlargedRevision) return;
+      img.remove();
+      lightboxMessage.textContent = 'This photograph could not be loaded. Close to return to the profile.';
+    }, { once: true });
+    lightboxArea.append(img);
+    img.src = photo.fullSrc || photo.src;
+  });
   let photos = [];
   let personName = '';
   let index = 0;
@@ -19,6 +77,8 @@ export function createGallery(viewer) {
   }
 
   function render() {
+    closeEnlarged();
+    expand.hidden = true;
     const currentRevision = ++revision;
     frame.querySelector('img')?.remove();
     adjacentImages = [];
@@ -42,6 +102,8 @@ export function createGallery(viewer) {
       frame.setAttribute('aria-busy', 'false');
       message.hidden = true;
       img.hidden = false;
+      img.classList.toggle('is-landscape', img.naturalWidth >= img.naturalHeight);
+      expand.hidden = false;
 
       // Only preload neighbors after the visible image succeeds. Respect data saving.
       if (navigator.connection?.saveData || photos.length < 2) return;
@@ -93,6 +155,8 @@ export function createGallery(viewer) {
       render();
     },
     clear() {
+      closeEnlarged();
+      expand.hidden = true;
       revision++;
       photos = [];
       adjacentImages = [];

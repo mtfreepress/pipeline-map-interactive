@@ -261,7 +261,8 @@ for (const [width, height] of [[1200, 700], [1024, 768], [820, 1180], [768, 1024
       };
     });
     expect(sizes.appWidth).toBeLessThanOrEqual(1200);
-    expect(sizes.appHeight).toBeLessThanOrEqual(700);
+    if (width >= 900) expect(sizes.appHeight).toBeLessThanOrEqual(700);
+    else expect(sizes.appHeight).toBe(height);
     expect(sizes.noPageScroll).toBe(true);
     expect(sizes.panelFits).toBe(true);
     expect(sizes.zoomPosition).toBe(true);
@@ -274,6 +275,8 @@ for (const [width, height] of [[1200, 700], [1024, 768], [820, 1180], [768, 1024
     }
     await page.getByRole('button', { name: 'Next photograph' }).click();
     await expect(page.locator('#photo-count')).toHaveText('2 / 4');
+    await expect(page.locator('#photo-frame img')).toBeVisible();
+    await expect(page.locator('#photo-frame img')).toHaveCSS('object-fit', 'cover');
     await page.screenshot({ path: testInfo.outputPath('selected.png') });
   });
 }
@@ -342,7 +345,7 @@ test('embed breaks out of a centered article column on desktop and fits the view
     const expectedWidth = width >= 900 ? Math.min(width - 32, 1200) : Math.min(width, 677);
     if (width >= 900) await expect(page.locator('iframe')).toHaveCSS('margin-top', '0px');
     await expect.poll(() => page.locator('iframe').evaluate(el => el.clientWidth)).toBe(expectedWidth);
-    expect(await page.locator('iframe').evaluate(el => el.clientHeight)).toBeLessThanOrEqual(Math.min(height, 700));
+    expect(await page.locator('iframe').evaluate(el => el.clientHeight)).toBeLessThanOrEqual(width >= 900 ? Math.min(height, 700) : height);
     const bounds = await page.locator('iframe').evaluate(el => {
       const { left, right } = el.getBoundingClientRect();
       return { left, right, pageWidth: document.documentElement.scrollWidth };
@@ -379,3 +382,63 @@ for (const width of [320, 390, 768, 1200]) {
     await page.screenshot({ path: testInfo.outputPath('published-overview.png') });
   });
 }
+
+for (const width of [390, 1200]) {
+  test(`photos preserve header layout and enlarge within the embed at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 700 });
+    await page.route('**/src/people.js', route => route.fulfill({
+      contentType: 'text/javascript',
+      body: galleryProfiles.replace("src: './photos/demo-portrait.svg'", "src: './photos/demo-portrait.svg', fullSrc: './photos/portrait-large.svg'"),
+    }));
+    let largeRequests = 0;
+    await page.route('**/photos/portrait-large.svg', async route => {
+      largeRequests++;
+      await route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="1200"><rect width="600" height="1200" fill="teal"/></svg>' });
+    });
+    await openMap(page);
+    await selectProfile(page, 'demo-a');
+    const expand = page.getByRole('button', { name: 'Enlarge photograph', exact: true });
+    await expect(expand).toBeVisible();
+    const header = await page.locator('.viewer-header').boundingBox();
+    const frame = await page.locator('#photo-frame').boundingBox();
+    await expect(page.locator('#photo-frame img')).toHaveCSS('object-fit', 'cover');
+    expect(largeRequests).toBe(0);
+    await expand.click();
+    const dialog = page.getByRole('dialog', { name: 'Enlarged photograph', exact: true });
+    await expect(dialog.locator('img')).toBeVisible();
+    expect(largeRequests).toBe(1);
+    const app = await page.locator('#app').boundingBox();
+    expect(await dialog.boundingBox()).toEqual(app);
+    await page.screenshot({ path: testInfo.outputPath('enlarged.png') });
+    const close = page.getByRole('button', { name: 'Close enlarged photograph' });
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement.closest('#photo-lightbox') !== null || document.activeElement === document.body)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(expand).toBeFocused();
+    await expect(page.locator('#viewer')).toBeVisible();
+    await expand.click();
+    await close.click();
+    await page.getByRole('button', { name: 'Next photograph' }).click();
+    await expect(expand).toBeVisible();
+    expect(await page.locator('.viewer-header').boundingBox()).toEqual(header);
+    expect(await page.locator('#photo-frame').boundingBox()).toEqual(frame);
+    await selectProfile(page, 'demo-d');
+    await expect(expand).toBeHidden();
+  });
+}
+
+test('enlarged photo failure keeps a working close control', async ({ page }) => {
+  await page.route('**/src/people.js', route => route.fulfill({
+    contentType: 'text/javascript',
+    body: galleryProfiles.replace("src: './photos/demo-portrait.svg'", "src: './photos/demo-portrait.svg', fullSrc: './photos/missing-large.svg'"),
+  }));
+  await page.route('**/photos/missing-large.svg', route => route.fulfill({ status: 404 }));
+  await openMap(page);
+  await selectProfile(page, 'demo-a');
+  await page.getByRole('button', { name: 'Enlarge photograph', exact: true }).click();
+  await expect(page.locator('#lightbox-message')).toContainText('could not be loaded');
+  await page.getByRole('button', { name: 'Close enlarged photograph' }).click();
+  await expect(page.locator('#viewer')).toBeVisible();
+});
