@@ -125,6 +125,35 @@ export function createMapButtons({ map, stage, locations, areas, names, onSelect
         y: members.reduce((sum, point) => sum + point.y, 0) / members.length,
       });
     }
+    // Separate the northern camera group from the Daniels County label on desktop.
+    // Keep a leader to its geographic anchor rather than moving the source points.
+    for (const group of groups) {
+      const key = `group-${group.key}`;
+      if (!leaderLines.has(key)) {
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        leaders.append(line);
+        leaderLines.set(key, line);
+      }
+      const line = leaderLines.get(key);
+      line.style.display = 'none';
+      if (stage.clientWidth >= 900 && group.x >= 0 && group.x <= stage.clientWidth &&
+          group.y >= 0 && group.y <= stage.clientHeight && group.features.length > 1 &&
+          group.features.some(feature => feature.properties.id === 'fladager')) {
+        line.setAttribute('x1', group.x);
+        line.setAttribute('y1', group.y);
+        group.x = Math.max(28, group.x - 36);
+        line.setAttribute('x2', group.x);
+        line.setAttribute('y2', group.y);
+        line.style.display = '';
+      }
+    }
+    const activeGroupKeys = new Set(groups.map(group => `group-${group.key}`));
+    for (const [key, line] of leaderLines) {
+      if (key.startsWith('group-') && !activeGroupKeys.has(key)) {
+        line.remove();
+        leaderLines.delete(key);
+      }
+    }
     const active = new Set();
     for (const group of groups) {
       active.add(group.key);
@@ -263,12 +292,5 @@ export function createMapButtons({ map, stage, locations, areas, names, onSelect
   render();
   return {
     select(id) { selectedId = id; closeChooser(); render(); },
-    // Clicking a true geographic point underneath a group opens the same chooser.
-    openPoint(id) {
-      const group = groups.find((item) => item.features.some((feature) => feature.properties.id === id));
-      if (!group) return;
-      if (group.features.length > 1) openChooser(group, buttons.get(group.key));
-      else onSelect(id, map.getCanvas());
-    },
   };
 }

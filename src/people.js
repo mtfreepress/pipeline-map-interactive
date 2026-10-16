@@ -10,7 +10,7 @@ export const story = {
 };
 
 // Caption review: temporary demo illustrations; replace with final newsroom photographs.
-// Captions copied from map-info-captions.csv; Daniels County is the second Fladager image.
+// Captions copied from map-info-captions.csv; Daniels County has its own area profile.
 // Temporary slideshow review: preserve the supplied captions and append missing demos.
 function demoPhotos(photos) {
   const demos = [
@@ -30,6 +30,19 @@ function demoPhotos(photos) {
 }
 
 export const people = [
+  {
+    id: 'daniels-county',
+    name: 'Daniels County',
+    location: 'Daniels County, MT',
+    photos: demoPhotos([
+      {
+        src: "./photos/demo-landscape.svg",
+        alt: "Placeholder illustration of hills and fields; final photograph pending.",
+        caption: "Daniels County is home to roughly 1,600 people, 11% of whom live in poverty, according to U.S. Census data. County Commissioner Tammi Fladager said Bridger Pipeline could provide financial opportunity.",
+        credit: "Demo image · Final photograph pending",
+      },
+    ]),
+  },
   {
     id: 'valley-county-commission',
     name: 'Valley County Commission',
@@ -130,12 +143,6 @@ export const people = [
         src: "./photos/demo-portrait.svg",
         alt: "Placeholder illustration of a human silhouette; final photograph pending.",
         caption: "Tammi Fladager, Daniels County commissioner, said a project like Bridger Pipeline would provide a much-needed economic boon for eastern Montana.",
-        credit: "Demo image · Final photograph pending",
-      },
-      {
-        src: "./photos/demo-landscape.svg",
-        alt: "Placeholder illustration of hills and fields; final photograph pending.",
-        caption: "Daniels County is home to roughly 1,600 people, 11% of whom live in poverty, according to U.S. Census data. County Commissioner Tammi Fladager said Bridger Pipeline could provide financial opportunity.",
         credit: "Demo image · Final photograph pending",
       },
     ]),

@@ -13,6 +13,51 @@ const notices = new Map();
 let routeMap;
 let selectedId = null;
 let returnFocus;
+let panelAnimation;
+let layoutRevision = 0;
+const mapStage = document.querySelector('.map-stage');
+const mapViewport = document.querySelector('.map-viewport');
+
+// Settle the panel before moving the camera. A newer selection cancels the old
+// transition and starts at its current visible height, not its previous target.
+function changePanelLayout(update, updateMap) {
+  const revision = ++layoutRevision;
+  const previousHeight = mapViewport.getBoundingClientRect().height;
+  panelAnimation?.cancel();
+  panelAnimation = null;
+  routeMap?.beginLayoutTransition();
+  update();
+  const nextHeight = mapViewport.getBoundingClientRect().height;
+  const animate = matchMedia('(max-width: 899px)').matches &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches &&
+    Math.abs(previousHeight - nextHeight) > 1;
+  if (animate) {
+    panelAnimation = mapStage.animate({
+      gridTemplateRows: [
+        `${previousHeight}px minmax(0, 1fr)`,
+        `${nextHeight}px minmax(0, 1fr)`,
+      ],
+    }, { duration: 260, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+  }
+  updateMap();
+  if (!panelAnimation) {
+    routeMap?.endLayoutTransition();
+    return;
+  }
+  panelAnimation.finished.then(() => {
+    if (revision !== layoutRevision) return;
+    panelAnimation = null;
+    routeMap?.endLayoutTransition();
+  }).catch(() => {}); // Superseded by another selection or viewport resize.
+}
+
+window.addEventListener('resize', () => {
+  if (!panelAnimation) return;
+  layoutRevision++;
+  panelAnimation.cancel();
+  panelAnimation = null;
+  routeMap?.endLayoutTransition();
+});
 
 document.title = `${story.title} · Pipeline interactive`;
 
@@ -46,12 +91,13 @@ function selectPerson(id, origin) {
   optionalText('#person-name', person.name || 'Unnamed profile');
   optionalText('#person-location', person.location);
   optionalText('#person-description', person.description);
-  document.querySelector('#app').classList.add('has-selection');
-  viewer.hidden = false;
-  intro.hidden = true;
-  gallery.show(person);
-  viewer.querySelector('.viewer-content').scrollTop = 0;
-  routeMap?.select(id);
+  changePanelLayout(() => {
+    document.querySelector('#app').classList.add('has-selection');
+    viewer.hidden = false;
+    intro.hidden = true;
+    gallery.show(person);
+    viewer.querySelector('.viewer-content').scrollTop = 0;
+  }, () => routeMap?.select(id));
   viewer.focus({ preventScroll: true });
   announcement.textContent = `${person.name || 'Profile'} selected. Details are open.`;
 }
@@ -59,11 +105,14 @@ function selectPerson(id, origin) {
 function closeViewer(restoreFocus = true) {
   selectedId = null;
   gallery.clear();
-  document.querySelector('#app').classList.remove('has-selection');
-  viewer.hidden = true;
-  intro.hidden = false;
-  routeMap?.select(null);
-  routeMap?.resetView();
+  changePanelLayout(() => {
+    document.querySelector('#app').classList.remove('has-selection');
+    viewer.hidden = true;
+    intro.hidden = false;
+  }, () => {
+    routeMap?.select(null);
+    routeMap?.resetView();
+  });
   announcement.textContent = 'Person details closed.';
   if (restoreFocus) (returnFocus?.isConnected ? returnFocus : document.querySelector('.mapboxgl-canvas'))?.focus({ preventScroll: true });
 }

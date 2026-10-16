@@ -47,7 +47,7 @@ test.beforeEach(async ({ page }) => {
 
 async function openMap(page) {
   await page.goto('/');
-  await expect.poll(() => page.evaluate(() => Boolean(window.__testMap?.getLayer('people-hit-area')))).toBe(true);
+  await expect.poll(() => page.evaluate(() => Boolean(window.__testMap?.getLayer('pipeline-route')))).toBe(true);
   await expect(page.locator('.mapboxgl-canvas')).toHaveCount(1);
 }
 
@@ -157,7 +157,7 @@ test('empty people and unmatched profile ids have readable fallbacks', async ({ 
   await page.unroute('**/data/people.geojson');
   await page.route('**/data/people.geojson', (route) => route.fulfill({ json: locations }));
   await page.reload();
-  await expect.poll(() => page.evaluate(() => Boolean(window.__testMap?.getLayer('people-hit-area')))).toBe(true);
+  await expect.poll(() => page.evaluate(() => Boolean(window.__testMap?.getLayer('pipeline-route')))).toBe(true);
   await selectProfile(page, 'demo-a');
   await expect(page.locator('#person-name')).toHaveText('Profile unavailable');
 });
@@ -177,7 +177,7 @@ test('missing token and production assets work inside a subdirectory iframe', as
 
 test('only the requested places are labeled; areas are labeled interactive buttons', async ({ page }) => {
   await openMap(page);
-  await expect(page.locator('.map-legend')).toHaveText('Proposedroute');
+  await expect(page.locator('.map-legend')).toHaveText(/Proposed\s*route/);
   expect(await page.evaluate(() => window.__testMap.getLayoutProperty('settlement-label', 'visibility'))).toBe('none');
   expect(await page.evaluate(() => window.__testMap.getLayoutProperty('state-label', 'visibility'))).toBe('none');
   const filter = await page.evaluate(() => window.__testMap.getFilter('city-labels'));
@@ -185,6 +185,7 @@ test('only the requested places are labeled; areas are labeled interactive butto
   await expect.poll(() => page.evaluate(() => [...new Set(window.__testMap.queryRenderedFeatures({ layers: ['city-labels'] }).map(f => f.properties.name))])).toEqual(['Glasgow']);
   await expect(page.locator('.county-button[data-profile-id="valley-county-commission"] > span').first()).toHaveText('Valley\nCounty');
   await expect(page.locator('.county-button[data-profile-id="carter-county-commission"] > span').first()).toHaveText('Carter\nCounty');
+  await expect(page.locator('.county-button[data-profile-id="daniels-county"] > span').first()).toHaveText('Daniels\nCounty');
   await expect(page.locator('.reservation-button')).toContainText('Fort Peck Indian\nReservation');
   await expect(page.locator('.viewer-header .eyebrow')).toHaveCount(0);
 });
@@ -253,7 +254,7 @@ for (const [width, height] of [[1200, 700], [1024, 768], [820, 1180], [768, 1024
         zoomPosition: (() => {
           const zoom = document.querySelector('.mapboxgl-ctrl-group').getBoundingClientRect();
           return innerWidth >= 900
-            ? zoom.right > map.right - 30 && zoom.top < map.top + 30
+            ? zoom.right > map.right - 30 && zoom.bottom <= map.bottom && zoom.bottom > map.bottom - 90
             : zoom.left < map.left + 30 && zoom.bottom <= map.bottom && zoom.bottom > map.bottom - 60;
         })(),
         imageVisible: image.top >= panel.top && image.bottom <= panel.bottom,
@@ -471,5 +472,85 @@ for (const width of [390, 1200]) {
     await selectProfile(page, 'demo-b');
     await page.getByRole('button', { name: 'Enlarge photograph', exact: true }).click();
     await expect(page.locator('#lightbox-controls')).toBeHidden();
+  });
+}
+
+test.describe('mobile panel motion', () => {
+  test.use({ reducedMotion: 'no-preference', viewport: { width: 390, height: 844 } });
+
+  test('panel resizes smoothly before the camera zooms, then reverses on close', async ({ page }) => {
+    await openMap(page);
+    await expect.poll(() => page.evaluate(() => window.__testMap.isMoving())).toBe(false);
+    await page.evaluate(() => {
+      window.motionSamples = [];
+      window.sampleMotion = true;
+      function sample() {
+        if (!window.sampleMotion) return;
+        window.motionSamples.push({
+          height: document.querySelector('.map-viewport').getBoundingClientRect().height,
+          zoom: window.__testMap.getZoom(),
+        });
+        requestAnimationFrame(sample);
+      }
+      sample();
+    });
+    const original = await page.evaluate(() => window.motionSamples[0]);
+    await selectProfile(page, 'demo-a');
+    await expect.poll(() => page.evaluate(() => window.__testMap.getZoom())).toBeCloseTo(MAP_STYLE.pointZoom, 5);
+    await expect.poll(() => page.evaluate(() => window.__testMap.isMoving())).toBe(false);
+    const selectedHeight = await page.locator('.map-viewport').evaluate(el => el.getBoundingClientRect().height);
+    const opening = await page.evaluate(() => window.motionSamples.splice(0));
+    const resizing = opening.filter(sample => sample.height < original.height - 2 && sample.height > selectedHeight + 2);
+    expect(resizing.length).toBeGreaterThan(2);
+    for (const sample of resizing) expect(sample.zoom).toBeCloseTo(original.zoom, 5);
+    await page.getByRole('button', { name: 'Close person details' }).click();
+    await expect.poll(() => page.evaluate(() => window.__testMap.getZoom())).toBeCloseTo(original.zoom, 5);
+    const closing = await page.evaluate(() => { window.sampleMotion = false; return window.motionSamples; });
+    const expanding = closing.filter(sample => sample.height > selectedHeight + 2 && sample.height < original.height - 2);
+    expect(expanding.length).toBeGreaterThan(2);
+    for (const sample of expanding) expect(sample.zoom).toBeCloseTo(MAP_STYLE.pointZoom, 5);
+  });
+
+  test('closing during panel opening cancels the pending selection zoom', async ({ page }) => {
+    await openMap(page);
+    await expect.poll(() => page.evaluate(() => window.__testMap.isMoving())).toBe(false);
+    const originalZoom = await page.evaluate(() => window.__testMap.getZoom());
+    await page.locator('.map-buttons [data-profile-id="demo-a"]').evaluate(button => button.click());
+    await page.getByRole('button', { name: 'Close person details' }).evaluate(button => button.click());
+    await expect(page.locator('#viewer')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => document.querySelector('.map-stage').getAnimations().length)).toBe(0);
+    await expect.poll(() => page.evaluate(() => window.__testMap.isMoving())).toBe(false);
+    expect(await page.evaluate(() => window.__testMap.getZoom())).toBeCloseTo(originalZoom, 5);
+  });
+});
+
+
+for (const width of [390, 1200]) {
+  test(`camera groups replace individual markers and split on zoom at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    await openMap(page);
+    const ids = ['jerry-arnold', 'kleeman', 'fladager'];
+    const group = page.locator('.map-photo-button[data-profile-ids*="jerry-arnold"][data-profile-ids*="kleeman"][data-profile-ids*="fladager"]');
+    await expect(group).toBeVisible();
+    await expect(group.locator('.marker-count')).toHaveText('3');
+    for (const id of ids) await expect(page.locator(`.map-photo-button[data-profile-id="${id}"]`)).toHaveCount(0);
+    expect(await page.evaluate(() => window.__testMap.getStyle().layers.filter(layer => layer.type === 'circle' && layer.source === 'people'))).toEqual([]);
+    await group.click();
+    for (const id of ids) await expect(page.locator(`.profile-choice[data-profile-id="${id}"]`)).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.__testMap.jumpTo({ center: [-105.98, 48.79], zoom: 9 }));
+    await expect(group).toHaveCount(0);
+    for (const id of ids) {
+      const camera = page.locator(`.map-photo-button[data-profile-id="${id}"]`);
+      await expect(camera).toBeVisible();
+      await expect(camera.locator('.marker-count')).toHaveCount(0);
+    }
+    await page.locator('.map-photo-button[data-profile-id="jerry-arnold"]').click();
+    await expect(page.locator('#person-name')).toHaveText('Jerry Arnold');
+    await page.getByRole('button', { name: 'Close person details' }).click();
+    await expect(group).toBeVisible();
+    await expect(group.locator('.marker-count')).toHaveText('3');
   });
 }
