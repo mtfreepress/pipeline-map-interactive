@@ -12,6 +12,8 @@ export function createGallery(viewer) {
   const lightboxArea = lightbox.querySelector('.lightbox-image-area');
   const lightboxMessage = lightbox.querySelector('#lightbox-message');
   const lightboxCaption = lightbox.querySelector('#lightbox-caption');
+  const lightboxControls = lightbox.querySelector('#lightbox-controls');
+  const lightboxCount = lightbox.querySelector('#lightbox-count');
   const closePhoto = lightbox.querySelector('#close-photo');
   const app = document.querySelector('#app');
   let enlargedRevision = 0;
@@ -38,15 +40,16 @@ export function createGallery(viewer) {
     event.preventDefault();
     closeEnlarged();
   });
-  expand.addEventListener('click', () => {
+  function renderEnlarged() {
     const photo = photos[index];
-    if (!photo || expand.hidden) return;
+    if (!photo) return;
+    lightboxControls.hidden = photos.length < 2;
+    lightboxCount.textContent = `${index + 1} / ${photos.length}`;
     const currentRevision = ++enlargedRevision;
     lightboxArea.querySelector('img')?.remove();
     lightboxMessage.hidden = false;
     lightboxMessage.textContent = 'Loading photograph…';
     optionalText(lightboxCaption, [photo.caption, photo.credit].filter(Boolean).join(' — '));
-    lightbox.showModal();
     positionLightbox();
     const img = new Image();
     img.alt = photo.alt || `Photograph accompanying the profile of ${personName}`;
@@ -64,6 +67,11 @@ export function createGallery(viewer) {
     }, { once: true });
     lightboxArea.append(img);
     img.src = photo.fullSrc || photo.src;
+  }
+  expand.addEventListener('click', () => {
+    if (expand.hidden || !photos[index]) return;
+    lightbox.showModal();
+    renderEnlarged();
   });
   let photos = [];
   let personName = '';
@@ -77,7 +85,6 @@ export function createGallery(viewer) {
   }
 
   function render() {
-    closeEnlarged();
     expand.hidden = true;
     const currentRevision = ++revision;
     frame.querySelector('img')?.remove();
@@ -134,21 +141,27 @@ export function createGallery(viewer) {
     if (photos.length < 2) return;
     index = (index + direction + photos.length) % photos.length;
     render();
+    if (lightbox.open) renderEnlarged();
   }
 
+  lightbox.querySelector('#lightbox-previous').addEventListener('click', () => advance(-1));
+  lightbox.querySelector('#lightbox-next').addEventListener('click', () => advance(1));
   viewer.querySelector('#previous-photo').addEventListener('click', () => advance(-1));
   viewer.querySelector('#next-photo').addEventListener('click', () => advance(1));
-  viewer.addEventListener('keydown', (event) => {
+  function onArrowKey(event) {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.defaultPrevented) return;
     if (event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     if (photos.length > 1 && ['ArrowLeft', 'ArrowRight'].includes(event.key)) {
       event.preventDefault();
       advance(event.key === 'ArrowLeft' ? -1 : 1);
     }
-  });
+  }
+  viewer.addEventListener('keydown', onArrowKey);
+  lightbox.addEventListener('keydown', onArrowKey);
 
   return {
     show(person) {
+      closeEnlarged();
       personName = person.name || 'this person';
       photos = Array.isArray(person.photos) ? person.photos.filter(Boolean) : [];
       index = 0;

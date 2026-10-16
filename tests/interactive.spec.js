@@ -177,7 +177,7 @@ test('missing token and production assets work inside a subdirectory iframe', as
 
 test('only the requested places are labeled; areas are labeled interactive buttons', async ({ page }) => {
   await openMap(page);
-  await expect(page.locator('.map-legend')).toHaveText('Pipeline');
+  await expect(page.locator('.map-legend')).toHaveText('Proposedroute');
   expect(await page.evaluate(() => window.__testMap.getLayoutProperty('settlement-label', 'visibility'))).toBe('none');
   expect(await page.evaluate(() => window.__testMap.getLayoutProperty('state-label', 'visibility'))).toBe('none');
   const filter = await page.evaluate(() => window.__testMap.getFilter('city-labels'));
@@ -401,7 +401,9 @@ for (const width of [390, 1200]) {
     await expect(expand).toBeVisible();
     const header = await page.locator('.viewer-header').boundingBox();
     const frame = await page.locator('#photo-frame').boundingBox();
-    await expect(page.locator('#photo-frame img')).toHaveCSS('object-fit', 'cover');
+    await expect(page.locator('#photo-frame img')).toHaveCSS('object-fit', 'contain');
+    await expect(page.locator('#photo-frame img')).toHaveCSS('object-position', '50% 50%');
+    expect(await page.locator('#photo-frame img').evaluate(img => img.naturalWidth / img.naturalHeight)).toBeCloseTo(2 / 3);
     expect(largeRequests).toBe(0);
     await expand.click();
     const dialog = page.getByRole('dialog', { name: 'Enlarged photograph', exact: true });
@@ -442,3 +444,32 @@ test('enlarged photo failure keeps a working close control', async ({ page }) =>
   await page.getByRole('button', { name: 'Close enlarged photograph' }).click();
   await expect(page.locator('#viewer')).toBeVisible();
 });
+
+for (const width of [390, 1200]) {
+  test(`enlarged slideshow wraps and synchronizes captions and preview at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 700 });
+    await openMap(page);
+    await selectProfile(page, 'demo-a');
+    await page.getByRole('button', { name: 'Enlarge photograph', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Enlarged photograph', exact: true });
+    await expect(dialog.locator('img')).toBeVisible();
+    await page.getByRole('button', { name: 'Previous enlarged photograph' }).click();
+    await expect(page.locator('#lightbox-count')).toHaveText('4 / 4');
+    await expect(dialog.locator('img')).toHaveAttribute('src', './photos/demo-detail.svg');
+    await expect(page.locator('#lightbox-caption')).toHaveText('Demo image');
+    await page.getByRole('button', { name: 'Next enlarged photograph' }).click();
+    await expect(page.locator('#lightbox-count')).toHaveText('1 / 4');
+    await page.keyboard.press('ArrowRight');
+    await expect(page.locator('#lightbox-count')).toHaveText('2 / 4');
+    await expect(dialog.locator('img')).toBeVisible();
+    await expect(page.locator('#lightbox-caption')).toContainText('Demo landscape');
+    await expect(page.locator('#photo-count')).toHaveText('2 / 4');
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(page.locator('#photo-frame img')).toHaveAttribute('src', './photos/demo-landscape.svg');
+    await expect(page.getByRole('button', { name: 'Enlarge photograph', exact: true })).toBeFocused();
+    await selectProfile(page, 'demo-b');
+    await page.getByRole('button', { name: 'Enlarge photograph', exact: true }).click();
+    await expect(page.locator('#lightbox-controls')).toBeHidden();
+  });
+}

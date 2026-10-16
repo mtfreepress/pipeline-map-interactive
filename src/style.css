@@ -37,15 +37,16 @@ p, h1, h2, figure { margin: 0; }
 
 .eyebrow { font-size: 16px; letter-spacing: 0.1em; line-height: 1.4; font-weight: 700; text-transform: uppercase; }
 .map-stage { flex: 1; position: relative; min-height: 0; overflow: hidden; isolation: isolate; }
-.map-viewport { position: absolute; inset: 0; overflow: hidden; }
+.map-viewport { z-index: 0; position: absolute; inset: 0; overflow: hidden; }
 #map { position: absolute; inset: 0; z-index: 0; background-color: #e6e9e1; background-image: linear-gradient(#dce0d650 1px, transparent 1px), linear-gradient(90deg, #dce0d650 1px, transparent 1px); background-size: 36px 36px; }
 .map-legend { position: absolute; top: 16px; left: 16px; display: flex; gap: 18px; padding: 10px 12px; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 3px; font-size: 18px; pointer-events: none; }
-.map-legend span { display: flex; align-items: center; gap: 8px; }
-.route-key { width: 25px; border-top: 4px solid var(--route); }
+.map-legend > span { display: flex; align-items: center; gap: 8px; }
+.legend-label { line-height: 1.1; }
+.route-key { flex: none; width: 25px; border-top: 5px solid var(--route); }
 .map-status { position: absolute; z-index: 2; top: 72px; left: 16px; max-width: min(420px, calc(100% - 90px)); max-height: 30%; overflow: auto; padding: 15px 17px; border: 1px solid var(--border); border-left: 3px solid var(--route); background: var(--panel-bg); font-size: 17px; line-height: 1.55; }
 .map-status p + p { margin-top: 10px; }
 /* One shared anchor for directions and profile content. */
-.profile-panel { position: absolute; bottom: 40px; left: 20px; width: var(--panel-width); max-height: calc(100% - 170px); display: flex; flex-direction: column; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 3px 15px #1424220c; overflow: hidden; }
+.profile-panel { z-index: 10; position: absolute; bottom: 40px; left: 20px; width: var(--panel-width); max-height: calc(100% - 170px); display: flex; flex-direction: column; background: var(--panel-bg); border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 3px 15px #1424220c; overflow: hidden; }
 .has-selection .profile-panel { top: 76px; max-height: none; }
 .has-selection .viewer { flex: 1; }
 .intro-panel { padding: 20px; overflow: auto; }
@@ -62,8 +63,8 @@ p, h1, h2, figure { margin: 0; }
 .viewer-content { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .icon-button { width: 44px; height: 44px; flex: none; display: grid; place-content: center; font-size: 23px; line-height: 1; }
 .close-button { font-size: 27px; background: transparent; }
-.photo-frame { display: grid; place-items: center; position: relative; width: 100%; height: clamp(120px, 32svh, 280px); background: #ebece5; overflow: hidden; }
-.photo-frame img { display: block; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: contain; object-position: left center; }
+.photo-frame { display: grid; place-items: center; position: relative; width: 100%; height: clamp(120px, 32svh, 280px); background: var(--panel-bg); overflow: hidden; }
+.photo-frame img { display: block; width: 100%; height: 100%; min-height: 0; min-width: 0; object-fit: contain; object-position: center; }
 .photo-frame img.is-landscape { object-fit: cover; object-position: center; }
 .photo-message { padding: 24px; font-size: var(--panel-caption-size); line-height: 1.6; text-align: center; color: var(--muted); }
 .carousel-controls { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px; border-bottom: 1px solid var(--border); }
@@ -157,3 +158,8 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
 .lightbox-close { position: absolute; top: 10px; right: 10px; z-index: 1; background: #17201fed; color: white; border-color: white; font-size: 32px; }
 .lightbox-close:hover:not(:disabled) { background: #344b49; }
 .lightbox-caption { flex: none; max-height: 25%; overflow: auto; padding: 12px 20px; font-size: 16px; line-height: 1.5; }
+
+.lightbox-controls { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 6px 12px; border-top: 1px solid #ffffff40; }
+.lightbox-controls button { background: #17201f; color: white; border-color: white; font-size: 28px; }
+.lightbox-controls button:hover { background: #344b49; }
+#lightbox-count { font-size: 16px; font-variant-numeric: tabular-nums; }

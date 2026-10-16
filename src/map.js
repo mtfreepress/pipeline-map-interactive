@@ -35,8 +35,8 @@ export const MAP_STYLE = {
     waterwayMinZoom: null,
     waterwayWidth: null, // CSS pixels, or a Mapbox zoom expression (see README).
   },
-  routeWidth: 4,
-  casingWidth: 7,
+  routeWidth: 5,
+  casingWidth: 8,
   pointRadius: 8,
   selectedRadius: 10,
   hitRadius: 22,
