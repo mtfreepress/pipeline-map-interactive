@@ -277,7 +277,7 @@ for (const [width, height] of [[1200, 700], [1024, 768], [820, 1180], [768, 1024
     await page.getByRole('button', { name: 'Next photograph' }).click();
     await expect(page.locator('#photo-count')).toHaveText('2 / 4');
     await expect(page.locator('#photo-frame img')).toBeVisible();
-    await expect(page.locator('#photo-frame img')).toHaveCSS('object-fit', 'cover');
+    await expect(page.locator('#photo-frame img')).toHaveCSS('object-fit', width < 900 ? 'contain' : 'cover');
     await page.screenshot({ path: testInfo.outputPath('selected.png') });
   });
 }
@@ -426,7 +426,7 @@ for (const width of [390, 1200]) {
     await page.getByRole('button', { name: 'Next photograph' }).click();
     await expect(expand).toBeVisible();
     expect(await page.locator('.viewer-header').boundingBox()).toEqual(header);
-    expect(await page.locator('#photo-frame').boundingBox()).toEqual(frame);
+    if (width >= 900) expect(await page.locator('#photo-frame').boundingBox()).toEqual(frame);
     await selectProfile(page, 'demo-d');
     await expect(expand).toBeHidden();
   });
@@ -590,5 +590,38 @@ for (const width of [390, 1200]) {
     await expect(dialog.locator('img')).toBeVisible();
     await expect(dialog.locator('img')).toHaveAttribute('src', people.find(person => person.id === 'kleeman').photos[1].fullSrc);
     expect(requests.filter(url => url.includes('-full.webp'))).toHaveLength(2);
+  });
+}
+
+
+for (const [width, height] of [[390, 844], [320, 460], [820, 1180]]) {
+  test(`mobile landscape previews show the whole image at ${width}×${height}`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height });
+    await page.unroute('**/src/people.js');
+    await page.unroute('**/data/people.geojson');
+    await openMap(page);
+    await selectProfile(page, 'kleeman');
+    await expect(page.locator('#photo-frame img')).toBeVisible();
+    const header = await page.locator('.viewer-header').boundingBox();
+    const map = await page.locator('.map-viewport').boundingBox();
+    await page.getByRole('button', { name: 'Next photograph', exact: true }).click();
+    const img = page.locator('#photo-frame img');
+    await expect(img).toBeVisible();
+    await expect(img).toHaveCSS('object-fit', 'contain');
+    const dimensions = await img.evaluate(image => {
+      const frame = image.closest('.photo-frame').getBoundingClientRect();
+      const content = document.querySelector('.viewer-content').getBoundingClientRect();
+      const expectedHeight = Math.min(frame.width * image.naturalHeight / image.naturalWidth, Math.max(80, content.height - 56));
+      return { actual: frame.height, expected: expectedHeight, fits: frame.bottom <= content.bottom };
+    });
+    expect(dimensions.actual).toBeCloseTo(dimensions.expected, 0);
+    expect(dimensions.fits).toBe(true);
+    expect(await page.locator('.viewer-header').boundingBox()).toEqual(header);
+    expect(await page.locator('.map-viewport').boundingBox()).toEqual(map);
+    await expect(page.getByRole('button', { name: 'Next photograph', exact: true })).toBeInViewport();
+    await page.screenshot({ path: testInfo.outputPath('landscape-preview.png') });
+    await page.getByRole('button', { name: 'Previous photograph', exact: true }).click();
+    await expect(img).toBeVisible();
+    await expect(page.locator('#photo-frame')).not.toHaveClass(/is-landscape/);
   });
 }

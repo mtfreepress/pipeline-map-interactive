@@ -84,12 +84,19 @@ export function createGallery(viewer) {
     element.hidden = !value;
   }
 
+  function setPreviewShape(width, height) {
+    const landscape = width > 0 && height > 0 && width >= height;
+    frame.classList.toggle('is-landscape', landscape);
+    frame.style.setProperty('--photo-aspect-ratio', landscape ? `${width} / ${height}` : '1');
+  }
+
   function render() {
     expand.hidden = true;
     const currentRevision = ++revision;
     frame.querySelector('img')?.remove();
     adjacentImages = [];
     const photo = photos[index];
+    setPreviewShape(photo?.width, photo?.height);
     controls.hidden = photos.length < 2;
     count.textContent = photos.length > 1 ? `${index + 1} / ${photos.length}` : '';
     optionalText(caption, photo?.caption);
@@ -109,6 +116,7 @@ export function createGallery(viewer) {
       frame.setAttribute('aria-busy', 'false');
       message.hidden = true;
       img.hidden = false;
+      setPreviewShape(img.naturalWidth, img.naturalHeight);
       img.classList.toggle('is-landscape', img.naturalWidth >= img.naturalHeight);
       expand.hidden = false;
 

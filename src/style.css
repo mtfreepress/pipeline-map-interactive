@@ -104,8 +104,16 @@ figcaption { padding: 16px 20px; font-size: var(--panel-caption-size); line-heig
   .viewer h2 { font-size: 23px; line-height: 1.15; }
   .person-location { margin-top: 3px; line-height: 1.3; }
   /* Share extra screen height between the map and the scrollable photo panel. */
-  .viewer-content { scrollbar-gutter: auto; }
+  .viewer-content { scrollbar-gutter: auto; container-type: size; }
   .photo-frame { height: var(--photo-height); }
+  /* Fit the complete landscape image, reserving room for the carousel controls.
+     Container height follows the panel, not the entire phone viewport. */
+  .photo-frame.is-landscape {
+    height: auto;
+    aspect-ratio: var(--photo-aspect-ratio);
+    max-height: max(80px, calc(100cqh - 56px));
+  }
+  .photo-frame.is-landscape img { position: absolute; inset: 0; object-fit: contain; }
   .photo-message { padding: 12px; }
   .carousel-controls { padding: 3px 12px; }
   figcaption { padding: 10px 14px; }
