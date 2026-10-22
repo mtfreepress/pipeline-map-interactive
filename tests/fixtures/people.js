@@ -3,7 +3,7 @@
 export const story = {
   demo: true,
   title: 'Along the route',
-  subtitle: 'Bridger pipeline · People and places along the route.',
+  subtitle: 'Bridger Pipeline · People and places along the route.',
   dataNote: 'Bridger route · Demo people & images',
 };
 

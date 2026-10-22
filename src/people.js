@@ -5,7 +5,7 @@ import { profiles } from './profiles.js';
 export const story = {
   demo: false,
   title: 'Along the route',
-  subtitle: 'Bridger pipeline · People and places along the route.',
+  subtitle: 'Bridger Pipeline · People and places along the route.',
   dataNote: 'Bridger route · Locations from Census geocoding and newsroom-supplied coordinates',
 };
 
